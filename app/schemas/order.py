@@ -12,6 +12,13 @@ class ExtractedAddress(BaseModel):
     house_number: str | None = None
 
 
+class PublicAddress(BaseModel):
+    province: str | None = None
+    ward: str | None = None
+    street: str | None = None
+    house_number: str | None = None
+
+
 class ExtractedOrder(BaseModel):
     name: str | None = None
     phone: str | None = None
@@ -52,4 +59,8 @@ class ParseResponse(BaseModel):
     name: str | None = None
     phone: str | None = None
     note: str | None = None
-    address: ExtractedAddress = Field(default_factory=ExtractedAddress)
+    address: PublicAddress = Field(default_factory=PublicAddress)
+
+
+class OcrResponse(BaseModel):
+    text: str

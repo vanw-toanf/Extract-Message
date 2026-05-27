@@ -11,6 +11,8 @@ from app.schemas.order import ExtractedOrder
 SYSTEM_PROMPT = """Bạn là hệ thống trích xuất thông tin đơn giao hàng tại Việt Nam.
 Chỉ trả về JSON hợp lệ, không markdown, không giải thích.
 Không tự bịa dữ liệu. Nếu thiếu hoặc không chắc, dùng null.
+Nếu nội dung không phải tin nhắn/đơn giao hàng hoặc không có thông tin khách hàng,
+hãy trả JSON đúng schema với tất cả trường là null.
 
 Schema bắt buộc:
 {
@@ -31,6 +33,8 @@ Quy tắc:
 - ward là xã/phường/thị trấn khách nhập, có thể là tên cũ hoặc tên mới.
 - street gồm tên đường/ngõ/ngách/hẻm/ấp/thôn/khu phố nếu có.
 - house_number là số nhà hoặc số hẻm/ngõ chính nếu có.
+- Nếu chỉ có số nhà, xã/phường, tỉnh/thành phố mà không có đường/ngõ/ngách/hẻm,
+  street phải là null. Tuyệt đối không tự bịa tên đường.
 - note là ghi chú giao hàng, ví dụ gọi trước, giờ giao, COD, màu nhà, gần địa điểm.
 - name có thể đi kèm cách gọi như anh/chị/cô/chú/bạn + tên, ví dụ "chị Mai", "anh Nam".
 - phone đã được hệ thống regex xử lý trước, không cần trích xuất số điện thoại.

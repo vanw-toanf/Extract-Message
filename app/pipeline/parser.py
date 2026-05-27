@@ -5,7 +5,7 @@ from app.pipeline.address_normalizer import AddressNormalizer
 from app.pipeline.phone_extractor import extract_phone, remove_phone
 from app.pipeline.rule_extractor import extract_rule_hints
 from app.pipeline.text_utils import compact_text
-from app.schemas.order import ExtractedAddress, ExtractedOrder, ParseResponse
+from app.schemas.order import ExtractedAddress, ExtractedOrder, ParseResponse, PublicAddress
 from app.services.llm_client import LLMClient
 
 
@@ -22,6 +22,9 @@ class OrderParser:
         regex_phone = extract_phone(cleaned)
         rule_name, rule_address = extract_rule_hints(cleaned)
         llm_input = compact_text(remove_phone(cleaned))
+
+        if not self._is_likely_order(cleaned, regex_phone, rule_address):
+            return ParseResponse()
 
         extracted = ExtractedOrder()
         if use_llm and self.settings.enable_llm:
@@ -44,13 +47,31 @@ class OrderParser:
             name=extracted.name,
             phone=extracted.phone,
             note=extracted.note,
-            address=ExtractedAddress(
+            address=PublicAddress(
                 province=normalized_address.province or extracted.address.province,
                 ward=normalized_address.ward or extracted.address.ward,
                 street=normalized_address.street or extracted.address.street,
                 house_number=normalized_address.house_number
                 or extracted.address.house_number,
             ),
+        )
+
+    def _is_likely_order(
+        self,
+        text: str,
+        phone: str | None,
+        address_hint: ExtractedAddress,
+    ) -> bool:
+        if phone:
+            return True
+        if address_hint.province or address_hint.ward or address_hint.street:
+            return True
+        return bool(
+            re.search(
+                r"\b(giao|ship|địa chỉ|dia chi|đc|dc|sđt|sdt|phone|tel|chốt|chot|đơn|don|cod)\b",
+                text,
+                flags=re.IGNORECASE,
+            )
         )
 
     def _normalize_phone(self, phone: str | None) -> str | None:

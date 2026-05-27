@@ -52,6 +52,27 @@ Dùng để test riêng DB địa giới khi chưa bật Qwen:
 }
 ```
 
+### `POST /ocr-image`
+
+Nhận ảnh chụp màn hình và trả text OCR:
+
+```bash
+curl -X POST http://127.0.0.1:8000/ocr-image \
+  -F "file=@screenshot.png"
+```
+
+### `POST /parse-image`
+
+Nhận ảnh chụp màn hình, OCR thành text, rồi chạy pipeline `/parse-text`:
+
+```bash
+curl -X POST http://127.0.0.1:8000/parse-image \
+  -F "file=@screenshot.png"
+```
+
+OCR dùng `easyocr` chạy như thư viện trong process API, không cần host một OCR service riêng.
+Lần đầu chạy có thể chậm hơn vì EasyOCR tải model OCR về cache.
+
 ## Cấu hình Colab/Qwen
 
 Nếu Colab expose Ollama qua ngrok/cloudflared:
