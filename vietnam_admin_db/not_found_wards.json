@@ -1,0 +1,1222 @@
+[
+  {
+    "province": "Thủ Đô Hà Nội",
+    "ward": "Phường Ba Đình",
+    "old_ward": "Đồng Xuân sau khi sắp Xếp"
+  },
+  {
+    "province": "Thủ Đô Hà Nội",
+    "ward": "Phường Cửa Nam",
+    "old_ward": "phần còn lại của các Phường Hàng Bông"
+  },
+  {
+    "province": "Thủ Đô Hà Nội",
+    "ward": "Phường Hoàng Mai",
+    "old_ward": "Sắp xếp một phần diện tích TN"
+  },
+  {
+    "province": "Thủ Đô Hà Nội",
+    "ward": "Phường Kim Liên",
+    "old_ward": "Phường Phương Liên Trung Tự"
+  },
+  {
+    "province": "Thủ Đô Hà Nội",
+    "ward": "Phường Tây Tựu",
+    "old_ward": "toàn bố quy mô dân số của phường Phường Tây Tựu"
+  },
+  {
+    "province": "Thủ Đô Hà Nội",
+    "ward": "Phường Tây Tựu",
+    "old_ward": "một phần diện tích TN của Xã Kim Chung"
+  },
+  {
+    "province": "Thủ Đô Hà Nội",
+    "ward": "Phường Văn Miếu - Quốc Tử Giám",
+    "old_ward": "Phường Văn Miếu Quốc Tử Giám"
+  },
+  {
+    "province": "Thủ Đô Hà Nội",
+    "ward": "Phường Văn Miếu - Quốc Tử Giám",
+    "old_ward": "Phường Phương Liên Trung Tự"
+  },
+  {
+    "province": "Thủ Đô Hà Nội",
+    "ward": "Phường Ô Chợ Dừa",
+    "old_ward": "Phường Văn Miếu Quốc Tử Giám"
+  },
+  {
+    "province": "Thủ Đô Hà Nội",
+    "ward": "Xã Chương Dương",
+    "old_ward": "Xã Vạn Nhất"
+  },
+  {
+    "province": "Thủ Đô Hà Nội",
+    "ward": "Xã Cổ Đô",
+    "old_ward": "Xã Phú Hồng"
+  },
+  {
+    "province": "Thủ Đô Hà Nội",
+    "ward": "Xã Dân Hòa",
+    "old_ward": "Xã Cao Xuân Dương"
+  },
+  {
+    "province": "Thủ Đô Hà Nội",
+    "ward": "Xã Hòa Phú",
+    "old_ward": "Xã Hồng Phú"
+  },
+  {
+    "province": "Thủ Đô Hà Nội",
+    "ward": "Xã Hòa Xá",
+    "old_ward": "Xã Bình Lưu Quang"
+  },
+  {
+    "province": "Thủ Đô Hà Nội",
+    "ward": "Xã Hương Sơn",
+    "old_ward": "Xã Vạn Tín"
+  },
+  {
+    "province": "Thủ Đô Hà Nội",
+    "ward": "Xã Kiều Phú",
+    "old_ward": "Xã Liệp Nghĩa"
+  },
+  {
+    "province": "Thủ Đô Hà Nội",
+    "ward": "Xã Phù Đổng",
+    "old_ward": "Xã Thiên Đức"
+  },
+  {
+    "province": "Thủ Đô Hà Nội",
+    "ward": "Xã Phú Xuyên",
+    "old_ward": "Xã Vạn Nhất"
+  },
+  {
+    "province": "Thủ Đô Hà Nội",
+    "ward": "Xã Phúc Thọ",
+    "old_ward": "Xã Tích Lộc"
+  },
+  {
+    "province": "Thủ Đô Hà Nội",
+    "ward": "Xã Thanh Oai",
+    "old_ward": "một phần diện tích TN"
+  },
+  {
+    "province": "Thủ Đô Hà Nội",
+    "ward": "Xã Thiên Lộc",
+    "old_ward": "một phần diện tích TN"
+  },
+  {
+    "province": "Thủ Đô Hà Nội",
+    "ward": "Xã Thư Lâm",
+    "old_ward": "các Xã Liên Hà"
+  },
+  {
+    "province": "Thủ Đô Hà Nội",
+    "ward": "Xã Vân Đình",
+    "old_ward": "Xã Cao Sơn Tiến"
+  },
+  {
+    "province": "Thủ Đô Hà Nội",
+    "ward": "Xã Yên Bài",
+    "old_ward": "một phần diện tích TN"
+  },
+  {
+    "province": "Thủ Đô Hà Nội",
+    "ward": "Xã Ứng Thiên",
+    "old_ward": "Xã Hoa Viên"
+  },
+  {
+    "province": "Tỉnh Cao Bằng",
+    "ward": "Xã Quảng Lâm",
+    "old_ward": "Xóm Tổng Dùn"
+  },
+  {
+    "province": "Tỉnh Tuyên Quang",
+    "ward": "Phường Minh Xuân",
+    "old_ward": "phần còn lại của xã Kim Phú sau khi sắp xếp"
+  },
+  {
+    "province": "Tỉnh Tuyên Quang",
+    "ward": "Xã Minh Ngọc",
+    "old_ward": "một phần diện tích tự nhiên"
+  },
+  {
+    "province": "Tỉnh Tuyên Quang",
+    "ward": "Xã Ngọc Đường",
+    "old_ward": "phần còn lại của Xã Yên Định"
+  },
+  {
+    "province": "Tỉnh Tuyên Quang",
+    "ward": "Xã Pờ Ly Ngài",
+    "old_ward": "Xã Sán Sả Hồ"
+  },
+  {
+    "province": "Tỉnh Tuyên Quang",
+    "ward": "Xã Sà Phìn",
+    "old_ward": "Xã Sà Phìn"
+  },
+  {
+    "province": "Tỉnh Tuyên Quang",
+    "ward": "Xã Thuận Hòa",
+    "old_ward": "Thôn Mịch A"
+  },
+  {
+    "province": "Tỉnh Tuyên Quang",
+    "ward": "Xã Thái Bình",
+    "old_ward": "một phần diện tích tự nhiên"
+  },
+  {
+    "province": "Tỉnh Tuyên Quang",
+    "ward": "Xã Thắng Mố",
+    "old_ward": "Xã Sủng Cháng"
+  },
+  {
+    "province": "Tỉnh Tuyên Quang",
+    "ward": "Xã Trung Hà",
+    "old_ward": "Thôn Nà Lừa"
+  },
+  {
+    "province": "Tỉnh Tuyên Quang",
+    "ward": "Xã Việt Lâm",
+    "old_ward": "phần còn lại của Xã Việt Lâm"
+  },
+  {
+    "province": "Tỉnh Tuyên Quang",
+    "ward": "Xã Vị Xuyên",
+    "old_ward": "một phần diện tích tự nhiên"
+  },
+  {
+    "province": "Tỉnh Tuyên Quang",
+    "ward": "Xã Yên Minh",
+    "old_ward": "Xã Lao"
+  },
+  {
+    "province": "Tỉnh Tuyên Quang",
+    "ward": "Xã Yên Minh",
+    "old_ward": "Chải"
+  },
+  {
+    "province": "Tỉnh Điện Biên",
+    "ward": "Phường Mường Lay",
+    "old_ward": "Xã Sá Tổng"
+  },
+  {
+    "province": "Tỉnh Điện Biên",
+    "ward": "Xã Mường Toong",
+    "old_ward": "Xã Huổi Lếch"
+  },
+  {
+    "province": "Tỉnh Điện Biên",
+    "ward": "Xã Sáng Nhè",
+    "old_ward": "Xã Xá Nhè"
+  },
+  {
+    "province": "Tỉnh Điện Biên",
+    "ward": "Xã Sín Chải",
+    "old_ward": "Xã Sín Chải"
+  },
+  {
+    "province": "Tỉnh Lai Châu",
+    "ward": "Phường Đoàn Kết",
+    "old_ward": "Xã Lản Nhì Thàng"
+  },
+  {
+    "province": "Tỉnh Lai Châu",
+    "ward": "Xã Bum Tở",
+    "old_ward": "Xã Can Hồ"
+  },
+  {
+    "province": "Tỉnh Lai Châu",
+    "ward": "Xã Dào San",
+    "old_ward": "Xã Tung Qua Lìn"
+  },
+  {
+    "province": "Tỉnh Lai Châu",
+    "ward": "Xã Hua Bum",
+    "old_ward": "Xã Hua Bum"
+  },
+  {
+    "province": "Tỉnh Lai Châu",
+    "ward": "Xã Phong Thổ",
+    "old_ward": "Xã Ma Li Pho"
+  },
+  {
+    "province": "Tỉnh Sơn La",
+    "ward": "Phường Mộc Châu",
+    "old_ward": "Phường Mộc Lỵ"
+  },
+  {
+    "province": "Tỉnh Sơn La",
+    "ward": "Phường Mộc Sơn",
+    "old_ward": "Phường Mộc Sơn"
+  },
+  {
+    "province": "Tỉnh Sơn La",
+    "ward": "Phường Thảo Nguyên",
+    "old_ward": "Phường Thảo Nguyên"
+  },
+  {
+    "province": "Tỉnh Sơn La",
+    "ward": "Xã Bó Sinh",
+    "old_ward": "Xã Pú Bẩu"
+  },
+  {
+    "province": "Tỉnh Sơn La",
+    "ward": "Xã Chiềng La",
+    "old_ward": "Xã Nong Lay"
+  },
+  {
+    "province": "Tỉnh Sơn La",
+    "ward": "Xã Thuận Châu",
+    "old_ward": "Xã Phổng Ly"
+  },
+  {
+    "province": "Tỉnh Sơn La",
+    "ward": "Xã Tà Hộc",
+    "old_ward": "Xã Nà Bó"
+  },
+  {
+    "province": "Tỉnh Sơn La",
+    "ward": "Xã Xím Vàng",
+    "old_ward": "Xã Xí m Vàng"
+  },
+  {
+    "province": "Tỉnh Lào Cai",
+    "ward": "Xã Hạnh Phúc",
+    "old_ward": "Xã Hát Lừu"
+  },
+  {
+    "province": "Tỉnh Lào Cai",
+    "ward": "Xã Liên Sơn",
+    "old_ward": "Thị trấn Nông trường Liên Sơn"
+  },
+  {
+    "province": "Tỉnh Lào Cai",
+    "ward": "Xã Phong Hải",
+    "old_ward": "Thị trấn Nông trường Phong Hải"
+  },
+  {
+    "province": "Tỉnh Lào Cai",
+    "ward": "Xã Púng Luông",
+    "old_ward": "Xã Dế Xu Phình"
+  },
+  {
+    "province": "Tỉnh Lào Cai",
+    "ward": "Xã Sín Chéng",
+    "old_ward": "Xã Nàn Sín"
+  },
+  {
+    "province": "Tỉnh Lào Cai",
+    "ward": "Xã Thượng Bằng La",
+    "old_ward": "Thị trấn Nông trường Trần Phú"
+  },
+  {
+    "province": "Tỉnh Lào Cai",
+    "ward": "Xã Võ Lao",
+    "old_ward": "Xã Nậm Dạng"
+  },
+  {
+    "province": "Tỉnh Thái Nguyên",
+    "ward": "Xã Vĩnh Thông",
+    "old_ward": "Xã Sỹ Bình"
+  },
+  {
+    "province": "Tỉnh Lạng Sơn",
+    "ward": "Xã Thái Bình",
+    "old_ward": "Thị trấn Nông Trường Thái Bình"
+  },
+  {
+    "province": "Tỉnh Bắc Ninh",
+    "ward": "Phường Kinh Bắc",
+    "old_ward": "Phường Tiền Ninh Vệ"
+  },
+  {
+    "province": "Tỉnh Bắc Ninh",
+    "ward": "Xã Biên Sơn",
+    "old_ward": "Trường bắn TB1"
+  },
+  {
+    "province": "Tỉnh Bắc Ninh",
+    "ward": "Xã Hợp Thịnh",
+    "old_ward": "Xã Hùng Thái"
+  },
+  {
+    "province": "Tỉnh Bắc Ninh",
+    "ward": "Xã Sa Lý",
+    "old_ward": "Xã Sa Lý"
+  },
+  {
+    "province": "Tỉnh Bắc Ninh",
+    "ward": "Xã Trung Kênh",
+    "old_ward": "Xã An Tập"
+  },
+  {
+    "province": "Tỉnh Phú Thọ",
+    "ward": "Xã Bao La",
+    "old_ward": "Xã Xăm Khòe"
+  },
+  {
+    "province": "Tỉnh Phú Thọ",
+    "ward": "Xã Hội Thịnh",
+    "old_ward": "Xã Hội Thịnh"
+  },
+  {
+    "province": "Tỉnh Phú Thọ",
+    "ward": "Xã Lương Sơn",
+    "old_ward": "một phần diện tích tự nhiên"
+  },
+  {
+    "province": "Tỉnh Phú Thọ",
+    "ward": "Xã Mai Châu",
+    "old_ward": "một phần diện tích tự nhiên"
+  },
+  {
+    "province": "Tỉnh Phú Thọ",
+    "ward": "Xã Tiền Phong",
+    "old_ward": "Xã Tiền Phong và một phần diện tích tự nhiên"
+  },
+  {
+    "province": "Tỉnh Phú Thọ",
+    "ward": "Xã Vĩnh Phú",
+    "old_ward": "Xã An Nhân"
+  },
+  {
+    "province": "Tỉnh Phú Thọ",
+    "ward": "Xã Vĩnh Thành",
+    "old_ward": "Xã Sao Đại Việt"
+  },
+  {
+    "province": "Thành Phố Hải Phòng",
+    "ward": "Phường Hòa Bình",
+    "old_ward": "Phường Thủy Hà"
+  },
+  {
+    "province": "Thành Phố Hải Phòng",
+    "ward": "Phường Lưu Kiếm",
+    "old_ward": "Xã Liên Xuân"
+  },
+  {
+    "province": "Thành Phố Hải Phòng",
+    "ward": "Phường Nam Triệu",
+    "old_ward": "Phường Nam Triệu Giang"
+  },
+  {
+    "province": "Thành Phố Hải Phòng",
+    "ward": "Phường Thiên Hương",
+    "old_ward": "Phường Hoàng Lâm"
+  },
+  {
+    "province": "Thành Phố Hải Phòng",
+    "ward": "Phường Thủy Nguyên",
+    "old_ward": "Phường Thủy Hà"
+  },
+  {
+    "province": "Thành Phố Hải Phòng",
+    "ward": "Xã Cẩm Giàng",
+    "old_ward": "Xã Phúc Điền"
+  },
+  {
+    "province": "Thành Phố Hải Phòng",
+    "ward": "Xã Gia Lộc",
+    "old_ward": "Xã Gia Phúc"
+  },
+  {
+    "province": "Thành Phố Hải Phòng",
+    "ward": "Xã Gia Phúc",
+    "old_ward": "Xã Gia Phúc"
+  },
+  {
+    "province": "Thành Phố Hải Phòng",
+    "ward": "Xã Hà Bắc",
+    "old_ward": "Xã Cẩm Việt"
+  },
+  {
+    "province": "Thành Phố Hải Phòng",
+    "ward": "Xã Hà Đông",
+    "old_ward": "Xã Vĩnh Cường"
+  },
+  {
+    "province": "Thành Phố Hải Phòng",
+    "ward": "Xã Khúc Thừa Dụ",
+    "old_ward": "Xã Kiến Phúc"
+  },
+  {
+    "province": "Thành Phố Hải Phòng",
+    "ward": "Xã Lai Khê",
+    "old_ward": "Xã Lai Khê"
+  },
+  {
+    "province": "Thành Phố Hải Phòng",
+    "ward": "Xã Lai Khê",
+    "old_ward": "Xã Vũ Dũng"
+  },
+  {
+    "province": "Thành Phố Hải Phòng",
+    "ward": "Xã Lai Khê",
+    "old_ward": "Xã Cẩm Việt"
+  },
+  {
+    "province": "Thành Phố Hải Phòng",
+    "ward": "Xã Lạc Phượng",
+    "old_ward": "Xã Lạc Phượng"
+  },
+  {
+    "province": "Thành Phố Hải Phòng",
+    "ward": "Xã Mao Điền",
+    "old_ward": "Xã Phúc Điền"
+  },
+  {
+    "province": "Thành Phố Hải Phòng",
+    "ward": "Xã Nam An Phụ",
+    "old_ward": "Xã Vũ Dũng"
+  },
+  {
+    "province": "Thành Phố Hải Phòng",
+    "ward": "Xã Thượng Hồng",
+    "old_ward": "Xã Thái Minh"
+  },
+  {
+    "province": "Thành Phố Hải Phòng",
+    "ward": "Xã Tân An",
+    "old_ward": "Xã Đức Phúc"
+  },
+  {
+    "province": "Thành Phố Hải Phòng",
+    "ward": "Xã Tân Kỳ",
+    "old_ward": "Xã Dân An"
+  },
+  {
+    "province": "Thành Phố Hải Phòng",
+    "ward": "Xã Việt Khê",
+    "old_ward": "Xã Liên Xuân"
+  },
+  {
+    "province": "Thành Phố Hải Phòng",
+    "ward": "Xã Đường An",
+    "old_ward": "Xã Thái Minh"
+  },
+  {
+    "province": "Thành Phố Hải Phòng",
+    "ward": "Đặc khu Bạch Long Vĩ",
+    "old_ward": "Huyện Bạch Long Vĩ"
+  },
+  {
+    "province": "Tỉnh Hưng Yên",
+    "ward": "Phường Sơn Nam",
+    "old_ward": "phần còn lại củ Xã Ngọc Thanh"
+  },
+  {
+    "province": "Tỉnh Hưng Yên",
+    "ward": "Xã Bắc Tiên Hưng",
+    "old_ward": "Xã Liên An Đô"
+  },
+  {
+    "province": "Tỉnh Hưng Yên",
+    "ward": "Xã Hiệp Cường",
+    "old_ward": "một phần diện tích tự nhiên"
+  },
+  {
+    "province": "Tỉnh Hưng Yên",
+    "ward": "Xã Hồng Vũ",
+    "old_ward": "Xã Hồng Vũ"
+  },
+  {
+    "province": "Tỉnh Hưng Yên",
+    "ward": "Xã Lạc Đạo",
+    "old_ward": "một phần diện tích tự nhiên"
+  },
+  {
+    "province": "Tỉnh Hưng Yên",
+    "ward": "Xã Nam Đông Hưng",
+    "old_ward": "Xã Xuân Quang Động"
+  },
+  {
+    "province": "Tỉnh Hưng Yên",
+    "ward": "Xã Nguyễn Văn Linh",
+    "old_ward": "Xã Nguyễn Văn Linh"
+  },
+  {
+    "province": "Tỉnh Hưng Yên",
+    "ward": "Xã Như Quỳnh",
+    "old_ward": "một phần diện tích tự nhiên"
+  },
+  {
+    "province": "Tỉnh Hưng Yên",
+    "ward": "Xã Quỳnh An",
+    "old_ward": "Xã Trang Bảo Xá"
+  },
+  {
+    "province": "Tỉnh Hưng Yên",
+    "ward": "Xã Tiên Lữ",
+    "old_ward": "Xã Hải Thắng"
+  },
+  {
+    "province": "Tỉnh Hưng Yên",
+    "ward": "Xã Triệu Việt Vương",
+    "old_ward": "Xã Phạm Hồng Thái"
+  },
+  {
+    "province": "Tỉnh Hưng Yên",
+    "ward": "Xã Việt Yên",
+    "old_ward": "Xã Việt Yên"
+  },
+  {
+    "province": "Tỉnh Hưng Yên",
+    "ward": "Xã Vũ Quý",
+    "old_ward": "Xã Vũ Quý"
+  },
+  {
+    "province": "Tỉnh Hưng Yên",
+    "ward": "Xã Đông Tiên Hưng",
+    "old_ward": "Xã Phong Dương Tiến"
+  },
+  {
+    "province": "Tỉnh Ninh Bình",
+    "ward": "Phường Duy Hà",
+    "old_ward": "một phần diện tích tự nhiên"
+  },
+  {
+    "province": "Tỉnh Ninh Bình",
+    "ward": "Phường Duy Tiên",
+    "old_ward": "một phần diện tích tự nhiên"
+  },
+  {
+    "province": "Tỉnh Ninh Bình",
+    "ward": "Phường Duy Tân",
+    "old_ward": "Xã Mộc Hoàn"
+  },
+  {
+    "province": "Tỉnh Ninh Bình",
+    "ward": "Phường Duy Tân",
+    "old_ward": "phần còn lại của Phường Hòa Mạc"
+  },
+  {
+    "province": "Tỉnh Ninh Bình",
+    "ward": "Phường Hà Nam",
+    "old_ward": "Xã Tiên Ngoại sau khi sắp xếp"
+  },
+  {
+    "province": "Tỉnh Ninh Bình",
+    "ward": "Phường Kim Thanh",
+    "old_ward": "Phường Tân Tựu"
+  },
+  {
+    "province": "Tỉnh Ninh Bình",
+    "ward": "Phường Liêm Tuyền",
+    "old_ward": "Phường Tân Liêm"
+  },
+  {
+    "province": "Tỉnh Ninh Bình",
+    "ward": "Phường Phủ Lý",
+    "old_ward": "Phường Châu Cầu"
+  },
+  {
+    "province": "Tỉnh Ninh Bình",
+    "ward": "Phường Phủ Lý",
+    "old_ward": "phần còn lại của Phường Quang Trung"
+  },
+  {
+    "province": "Tỉnh Ninh Bình",
+    "ward": "Phường Tiên Sơn",
+    "old_ward": "một phần diện tích tự nhiên"
+  },
+  {
+    "province": "Tỉnh Ninh Bình",
+    "ward": "Phường Tây Hoa Lư",
+    "old_ward": "phần còn lại của Xã Gia Tân"
+  },
+  {
+    "province": "Tỉnh Ninh Bình",
+    "ward": "Xã Gia Vân",
+    "old_ward": "một phần diện tích tự nhiên"
+  },
+  {
+    "province": "Tỉnh Ninh Bình",
+    "ward": "Xã Giao Thủy",
+    "old_ward": "Thị trấn Giao Thủy"
+  },
+  {
+    "province": "Tỉnh Ninh Bình",
+    "ward": "Xã Kim Đông",
+    "old_ward": "khu vực bãi bồi ven biển"
+  },
+  {
+    "province": "Tỉnh Ninh Bình",
+    "ward": "Xã Xuân Hưng",
+    "old_ward": "Xã Trà Lũ"
+  },
+  {
+    "province": "Tỉnh Thanh Hóa",
+    "ward": "Xã Lĩnh Toại",
+    "old_ward": "Xã Thái Lai"
+  },
+  {
+    "province": "Tỉnh Thanh Hóa",
+    "ward": "Xã Nga Sơn",
+    "old_ward": "Xã Nga Hiệp"
+  },
+  {
+    "province": "Tỉnh Thanh Hóa",
+    "ward": "Xã Thiệu Toán",
+    "old_ward": "Thị trấn Hậu Hiền"
+  },
+  {
+    "province": "Tỉnh Nghệ An",
+    "ward": "Xã Anh Sơn",
+    "old_ward": "Thị trấn Kim Nhan"
+  },
+  {
+    "province": "Tỉnh Nghệ An",
+    "ward": "Xã Bích Hào",
+    "old_ward": "Xã Mai Giang"
+  },
+  {
+    "province": "Tỉnh Nghệ An",
+    "ward": "Xã Con Cuông",
+    "old_ward": "Thị trấn Trà Lân"
+  },
+  {
+    "province": "Tỉnh Nghệ An",
+    "ward": "Xã Diễn Châu",
+    "old_ward": "Xã Ngọc Bích"
+  },
+  {
+    "province": "Tỉnh Nghệ An",
+    "ward": "Xã Hoa Quân",
+    "old_ward": "Xã Thanh Quả"
+  },
+  {
+    "province": "Tỉnh Nghệ An",
+    "ward": "Xã Hưng Nguyên",
+    "old_ward": "Xã Thịnh Mỹ"
+  },
+  {
+    "province": "Tỉnh Nghệ An",
+    "ward": "Xã Hưng Nguyên Nam",
+    "old_ward": "Xã Thông Tân"
+  },
+  {
+    "province": "Tỉnh Nghệ An",
+    "ward": "Xã Hải Châu",
+    "old_ward": "Xã Hùng Hải"
+  },
+  {
+    "province": "Tỉnh Nghệ An",
+    "ward": "Xã Kim Bảng",
+    "old_ward": "Xã Kim Bảng"
+  },
+  {
+    "province": "Tỉnh Nghệ An",
+    "ward": "Xã Minh Châu",
+    "old_ward": "Xã Hạnh Quảng"
+  },
+  {
+    "province": "Tỉnh Nghệ An",
+    "ward": "Xã Nghĩa Đồng",
+    "old_ward": "Xã Bình Hợp"
+  },
+  {
+    "province": "Tỉnh Nghệ An",
+    "ward": "Xã Quảng Châu",
+    "old_ward": "Xã Xuân Tháp"
+  },
+  {
+    "province": "Tỉnh Nghệ An",
+    "ward": "Xã Quỳnh Phú",
+    "old_ward": "Xã Thuận Long"
+  },
+  {
+    "province": "Tỉnh Nghệ An",
+    "ward": "Xã Yên Trung",
+    "old_ward": "Xã Hưng Yên Nam"
+  },
+  {
+    "province": "Tỉnh Nghệ An",
+    "ward": "Xã Đông Lộc",
+    "old_ward": "Xã Thịnh Trường"
+  },
+  {
+    "province": "Tỉnh Nghệ An",
+    "ward": "Xã Đại Đồng",
+    "old_ward": "Thị trấn Dùng"
+  },
+  {
+    "province": "Tỉnh Hà Tĩnh",
+    "ward": "Xã Kim Hoa",
+    "old_ward": "Xã Hàm Trường"
+  },
+  {
+    "province": "Tỉnh Quảng Trị",
+    "ward": "Xã Bắc Trạch",
+    "old_ward": "Xã Hạ Mỹ"
+  },
+  {
+    "province": "Tỉnh Quảng Trị",
+    "ward": "Xã Lệ Ninh",
+    "old_ward": "Thị trấn Nông trường Lệ Ninh"
+  },
+  {
+    "province": "Tỉnh Quảng Trị",
+    "ward": "Xã Nam Cửa Việt",
+    "old_ward": "Xã Triệu Tân"
+  },
+  {
+    "province": "Tỉnh Quảng Trị",
+    "ward": "Xã Nam Trạch",
+    "old_ward": "Thị trấn Nông trường Việt Trung"
+  },
+  {
+    "province": "Tỉnh Quảng Trị",
+    "ward": "Xã Nam Trạch",
+    "old_ward": "Xã Lý Nam"
+  },
+  {
+    "province": "Tỉnh Quảng Trị",
+    "ward": "Xã Triệu Cơ",
+    "old_ward": "Xã Triệu Cơ"
+  },
+  {
+    "province": "Tỉnh Quảng Trị",
+    "ward": "Xã Tân Gianh",
+    "old_ward": "Xã Phù Cảnh"
+  },
+  {
+    "province": "Tỉnh Quảng Trị",
+    "ward": "Xã Đakrông",
+    "old_ward": "Xã Đakrông"
+  },
+  {
+    "province": "Tỉnh Quảng Trị",
+    "ward": "Đặc khu Cồn Cỏ",
+    "old_ward": "Huyện Cồn Cỏ"
+  },
+  {
+    "province": "Thành Phố Huế",
+    "ward": "Phường Thuận Hóa",
+    "old_ward": "Phường Đúc"
+  },
+  {
+    "province": "Thành Phố Đà Nẵng",
+    "ward": "Phường An Hải",
+    "old_ward": "Phường An Hải Nam"
+  },
+  {
+    "province": "Thành Phố Đà Nẵng",
+    "ward": "Xã Avương",
+    "old_ward": "Xã Bhalêê"
+  },
+  {
+    "province": "Thành Phố Đà Nẵng",
+    "ward": "Xã Avương",
+    "old_ward": "Xã Avương"
+  },
+  {
+    "province": "Thành Phố Đà Nẵng",
+    "ward": "Xã Bến Giằng",
+    "old_ward": "Xã Tà Bhing"
+  },
+  {
+    "province": "Thành Phố Đà Nẵng",
+    "ward": "Xã Bến Hiên",
+    "old_ward": "Xã Mà Cooih"
+  },
+  {
+    "province": "Thành Phố Đà Nẵng",
+    "ward": "Xã Hùng Sơn",
+    "old_ward": "Xã Ch’ơm"
+  },
+  {
+    "province": "Thành Phố Đà Nẵng",
+    "ward": "Xã Hùng Sơn",
+    "old_ward": "Xã Gari"
+  },
+  {
+    "province": "Thành Phố Đà Nẵng",
+    "ward": "Xã Hùng Sơn",
+    "old_ward": "Xã Tr’hy"
+  },
+  {
+    "province": "Thành Phố Đà Nẵng",
+    "ward": "Xã Hùng Sơn",
+    "old_ward": "Xã Axan"
+  },
+  {
+    "province": "Thành Phố Đà Nẵng",
+    "ward": "Xã La Êê",
+    "old_ward": "Xã La Êê"
+  },
+  {
+    "province": "Thành Phố Đà Nẵng",
+    "ward": "Xã Nam Giang",
+    "old_ward": "Xã Zuôih"
+  },
+  {
+    "province": "Thành Phố Đà Nẵng",
+    "ward": "Xã Nông Sơn",
+    "old_ward": "Thị trấn Trung Phước"
+  },
+  {
+    "province": "Thành Phố Đà Nẵng",
+    "ward": "Xã Tây Giang",
+    "old_ward": "Xã Atiêng"
+  },
+  {
+    "province": "Thành Phố Đà Nẵng",
+    "ward": "Xã Tây Giang",
+    "old_ward": "Xã Anông"
+  },
+  {
+    "province": "Thành Phố Đà Nẵng",
+    "ward": "Xã Đông Giang",
+    "old_ward": "Thị trấn Prao"
+  },
+  {
+    "province": "Thành Phố Đà Nẵng",
+    "ward": "Đặc khu Hoàng Sa",
+    "old_ward": "Huyện Hoàng Sa"
+  },
+  {
+    "province": "Tỉnh Quảng Ngãi",
+    "ward": "Xã Bờ Y",
+    "old_ward": "Xã Pờ Y"
+  },
+  {
+    "province": "Tỉnh Quảng Ngãi",
+    "ward": "Xã Măng Bút",
+    "old_ward": "Xã Măng Bút"
+  },
+  {
+    "province": "Tỉnh Quảng Ngãi",
+    "ward": "Xã Măng Ri",
+    "old_ward": "Xã Ngọk Yêu"
+  },
+  {
+    "province": "Tỉnh Quảng Ngãi",
+    "ward": "Xã Măng Ri",
+    "old_ward": "Xã Ngọk Lây"
+  },
+  {
+    "province": "Tỉnh Quảng Ngãi",
+    "ward": "Xã Đăk Plô",
+    "old_ward": "Xã Đăk Plô"
+  },
+  {
+    "province": "Tỉnh Quảng Ngãi",
+    "ward": "Đặc khu Lý Sơn",
+    "old_ward": "Huyện Lý Sơn"
+  },
+  {
+    "province": "Tỉnh Gia Lai",
+    "ward": "Xã Chơ Long",
+    "old_ward": "Xã Chơ GLong"
+  },
+  {
+    "province": "Tỉnh Gia Lai",
+    "ward": "Xã Ia Dreh",
+    "old_ward": "Xã Ia Dreh"
+  },
+  {
+    "province": "Tỉnh Gia Lai",
+    "ward": "Xã Ia Hrú",
+    "old_ward": "Xã HBông"
+  },
+  {
+    "province": "Tỉnh Gia Lai",
+    "ward": "Xã Ia Pa",
+    "old_ward": "Xã Ia Mrơn"
+  },
+  {
+    "province": "Tỉnh Gia Lai",
+    "ward": "Xã KDang",
+    "old_ward": "Xã KDang"
+  },
+  {
+    "province": "Tỉnh Gia Lai",
+    "ward": "Xã Kon Gang",
+    "old_ward": "Xã Hneng"
+  },
+  {
+    "province": "Tỉnh Gia Lai",
+    "ward": "Xã Kông Bơ La",
+    "old_ward": "Xã Kông Bơ La"
+  },
+  {
+    "province": "Tỉnh Gia Lai",
+    "ward": "Xã la Băng",
+    "old_ward": "Xã Adơk"
+  },
+  {
+    "province": "Tỉnh Gia Lai",
+    "ward": "Xã Đak Rong",
+    "old_ward": "Xã Đak Rong"
+  },
+  {
+    "province": "Tỉnh Đắk Lắk",
+    "ward": "Xã Cư M’gar",
+    "old_ward": "Xã Ea H’đing"
+  },
+  {
+    "province": "Tỉnh Đắk Lắk",
+    "ward": "Xã Cư M’gar",
+    "old_ward": "Xã Cư M’gar"
+  },
+  {
+    "province": "Tỉnh Đắk Lắk",
+    "ward": "Xã Cư M’ta",
+    "old_ward": "Xã Cư Króa"
+  },
+  {
+    "province": "Tỉnh Đắk Lắk",
+    "ward": "Xã Cư M’ta",
+    "old_ward": "Xã Cư M’ta"
+  },
+  {
+    "province": "Tỉnh Đắk Lắk",
+    "ward": "Xã Cư Yang",
+    "old_ward": "Xã Cư Yang"
+  },
+  {
+    "province": "Tỉnh Đắk Lắk",
+    "ward": "Xã Dliê Ya",
+    "old_ward": "Xã Dliê Ya"
+  },
+  {
+    "province": "Tỉnh Đắk Lắk",
+    "ward": "Xã Ea Ly",
+    "old_ward": "Xã Ea Ly"
+  },
+  {
+    "province": "Tỉnh Đắk Lắk",
+    "ward": "Xã Ea M’Droh",
+    "old_ward": "Xã Ea M’nang"
+  },
+  {
+    "province": "Tỉnh Đắk Lắk",
+    "ward": "Xã Ea M’Droh",
+    "old_ward": "Xã Ea M’Droh"
+  },
+  {
+    "province": "Tỉnh Đắk Lắk",
+    "ward": "Xã Ea Ning",
+    "old_ward": "Xã Cư Êwi"
+  },
+  {
+    "province": "Tỉnh Đắk Lắk",
+    "ward": "Xã Ea Riêng",
+    "old_ward": "Xã Ea H’Mlay"
+  },
+  {
+    "province": "Tỉnh Đắk Lắk",
+    "ward": "Xã Ea Riêng",
+    "old_ward": "Xã Ea M’Doal"
+  },
+  {
+    "province": "Tỉnh Đắk Lắk",
+    "ward": "Xã Ea Súp",
+    "old_ward": "Xã Cư M’Lan"
+  },
+  {
+    "province": "Tỉnh Đắk Lắk",
+    "ward": "Xã Ea Tul",
+    "old_ward": "Xã Cư Dliê Mnông"
+  },
+  {
+    "province": "Tỉnh Đắk Lắk",
+    "ward": "Xã M’Drắk",
+    "old_ward": "Thị trấn M’Drắk"
+  },
+  {
+    "province": "Tỉnh Đắk Lắk",
+    "ward": "Xã Nam Ka",
+    "old_ward": "Xã Ea Rbin"
+  },
+  {
+    "province": "Tỉnh Đắk Lắk",
+    "ward": "Xã Suối Trai",
+    "old_ward": "Xã Ea Chà Rang"
+  },
+  {
+    "province": "Tỉnh Đắk Lắk",
+    "ward": "Xã Sông Hinh",
+    "old_ward": "Xã Ea Trol"
+  },
+  {
+    "province": "Tỉnh Đắk Lắk",
+    "ward": "Xã Sông Hinh",
+    "old_ward": "Xã Ea Bia"
+  },
+  {
+    "province": "Tỉnh Đắk Lắk",
+    "ward": "Xã Đức Bình",
+    "old_ward": "Xã Ea Bia"
+  },
+  {
+    "province": "Tỉnh Lâm Đồng",
+    "ward": "Phường 2 Bảo Lộc",
+    "old_ward": "Xã ĐamBri"
+  },
+  {
+    "province": "Tỉnh Lâm Đồng",
+    "ward": "Phường B'Lao",
+    "old_ward": "Phường B’Lao"
+  },
+  {
+    "province": "Tỉnh Lâm Đồng",
+    "ward": "Phường Nam Gia Nghĩa",
+    "old_ward": "Xã Đắk R’Moan"
+  },
+  {
+    "province": "Tỉnh Lâm Đồng",
+    "ward": "Xã Bảo Lâm 4",
+    "old_ward": "Xã B’Lá"
+  },
+  {
+    "province": "Tỉnh Lâm Đồng",
+    "ward": "Xã Cư Jút",
+    "old_ward": "Thị trấn Ea T’ling"
+  },
+  {
+    "province": "Tỉnh Lâm Đồng",
+    "ward": "Xã Cư Jút",
+    "old_ward": "Xã Cư K’nia"
+  },
+  {
+    "province": "Tỉnh Lâm Đồng",
+    "ward": "Xã D'Ran",
+    "old_ward": "Thị trấn D’Ran"
+  },
+  {
+    "province": "Tỉnh Lâm Đồng",
+    "ward": "Xã Nam Dong",
+    "old_ward": "Xã Đắk D’rông"
+  },
+  {
+    "province": "Tỉnh Lâm Đồng",
+    "ward": "Xã Nâm Nung",
+    "old_ward": "Xã Nâm N’Đir"
+  },
+  {
+    "province": "Tỉnh Lâm Đồng",
+    "ward": "Xã Trường Xuân",
+    "old_ward": "Xã Nâm N’Jang"
+  },
+  {
+    "province": "Tỉnh Lâm Đồng",
+    "ward": "Xã Tuy Đức",
+    "old_ward": "Xã Đắk R’Tíh"
+  },
+  {
+    "province": "Tỉnh Lâm Đồng",
+    "ward": "Xã Tà Đùng",
+    "old_ward": "Xã Đắk R’Măng"
+  },
+  {
+    "province": "Tỉnh Lâm Đồng",
+    "ward": "Xã Tân Hội",
+    "old_ward": "Xã N’ Thôn Hạ"
+  },
+  {
+    "province": "Tỉnh Lâm Đồng",
+    "ward": "Xã Tân Thành",
+    "old_ward": "Xã Thuận Quý"
+  },
+  {
+    "province": "Tỉnh Lâm Đồng",
+    "ward": "Xã Đam Rông 1",
+    "old_ward": "Xã Đạ K’Nàng"
+  },
+  {
+    "province": "Tỉnh Lâm Đồng",
+    "ward": "Xã Đam Rông 3",
+    "old_ward": "Xã Đạ M’Rông"
+  },
+  {
+    "province": "Tỉnh Lâm Đồng",
+    "ward": "Xã Đam Rông 4",
+    "old_ward": "Xã Đưng K’Nớ"
+  },
+  {
+    "province": "Tỉnh Lâm Đồng",
+    "ward": "Xã Đạ Huoai",
+    "old_ward": "Thị trấn Mađaguôi"
+  },
+  {
+    "province": "Tỉnh Lâm Đồng",
+    "ward": "Xã Đạ Huoai",
+    "old_ward": "Xã Mađaguôi"
+  },
+  {
+    "province": "Tỉnh Lâm Đồng",
+    "ward": "Xã Đạ Huoai 2",
+    "old_ward": "Thị trấn Đạ M’ri"
+  },
+  {
+    "province": "Tỉnh Lâm Đồng",
+    "ward": "Xã Đạ Huoai 3",
+    "old_ward": "xã Bà Gia"
+  },
+  {
+    "province": "Tỉnh Lâm Đồng",
+    "ward": "Xã Đắk Mil",
+    "old_ward": "Xã Đắk N’Drót"
+  },
+  {
+    "province": "Tỉnh Lâm Đồng",
+    "ward": "Xã Đắk Mil",
+    "old_ward": "Xã Đắk R’La"
+  },
+  {
+    "province": "Tỉnh Lâm Đồng",
+    "ward": "Xã Đức An",
+    "old_ward": "Xã Đắk N’Drung"
+  },
+  {
+    "province": "Thành Phố Hồ Chí Minh",
+    "ward": "Phường Chánh Hưng",
+    "old_ward": "Rạch Ông"
+  },
+  {
+    "province": "Thành Phố Hồ Chí Minh",
+    "ward": "Phường Phú Định",
+    "old_ward": "Phường Xóm Củi"
+  },
+  {
+    "province": "Thành Phố Hồ Chí Minh",
+    "ward": "Xã Hưng Long",
+    "old_ward": "Xã Qui Đức"
+  },
+  {
+    "province": "Thành Phố Hồ Chí Minh",
+    "ward": "Đặc khu Côn Đảo",
+    "old_ward": "Huyện Côn Đảo"
+  },
+  {
+    "province": "Tỉnh Đồng Tháp",
+    "ward": "Xã Mỹ Quí",
+    "old_ward": "Xã Mỹ Quí"
+  },
+  {
+    "province": "Tỉnh Vĩnh Long",
+    "ward": "Xã Lục Sĩ Thành",
+    "old_ward": "Xã Lục Sĩ Thành"
+  },
+  {
+    "province": "Tỉnh Vĩnh Long",
+    "ward": "Xã Tân Thủy",
+    "old_ward": "Thị trấn Tiệm Tôm"
+  },
+  {
+    "province": "Tỉnh An Giang",
+    "ward": "Xã Thạnh Mỹ Tây",
+    "old_ward": "Xã Ô Long Vĩ"
+  },
+  {
+    "province": "Tỉnh An Giang",
+    "ward": "Đặc khu Kiên Hải",
+    "old_ward": "Huyện Kiên Hải"
+  },
+  {
+    "province": "Thành Phố Cần Thơ",
+    "ward": "Xã Hòa Tú",
+    "old_ward": "Xã Hòa Tú 2"
+  }
+]
