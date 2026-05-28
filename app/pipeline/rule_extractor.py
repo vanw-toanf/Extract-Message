@@ -11,6 +11,11 @@ HOUSE_RE = re.compile(
     r"\b(?:sn|số nhà|so nha|số|so)\s*([0-9]+[a-zA-Z]?(?:/[0-9]+[a-zA-Z]?)?)\b",
     flags=re.IGNORECASE,
 )
+LEADING_HOUSE_RE = re.compile(
+    r"\b([0-9]+[a-zA-Z]?(?:/[0-9]+[a-zA-Z]?)?)\s+"
+    r"(?=(?:ngách|ngach|ngõ|ngo|hẻm|hem|kiệt|kiet|đường|duong|phố|pho)\b)",
+    flags=re.IGNORECASE,
+)
 WARD_RE = re.compile(
     r"\b(?:p\.?|phường|phuong|xã|xa|tt\.?|thị trấn|thi tran)\s+([^,.;\n]+)",
     flags=re.IGNORECASE,
@@ -61,6 +66,9 @@ def _extract_province(text: str) -> str | None:
 
 def _extract_house_number(text: str) -> str | None:
     match = HOUSE_RE.search(text or "")
+    if match:
+        return match.group(1).strip()
+    match = LEADING_HOUSE_RE.search(text or "")
     return match.group(1).strip() if match else None
 
 

@@ -88,9 +88,9 @@ class OrderParser:
         for field in ("province", "district_hint", "ward"):
             if not getattr(address, field) and getattr(hints, field):
                 setattr(address, field, getattr(hints, field))
-            elif field in {"district_hint", "ward"} and self._is_weak_admin_part(
-                getattr(address, field)
-            ) and getattr(hints, field):
+            elif field in {"district_hint", "ward"} and self._should_override_admin_part(
+                getattr(address, field), getattr(hints, field)
+            ):
                 setattr(address, field, getattr(hints, field))
 
         if not address.street and hints.street:
@@ -109,8 +109,22 @@ class OrderParser:
         ):
             address.house_number = hints.house_number
 
-    def _is_weak_admin_part(self, value: str | None) -> bool:
-        return not value or len(value.strip()) < 4
+    def _should_override_admin_part(
+        self, current: str | None, hint: str | None
+    ) -> bool:
+        if not hint:
+            return False
+        if not current or len(current.strip()) < 4:
+            return True
+        if "," in current:
+            return True
+        return bool(
+            re.search(
+                r"\b(quận|quan|huyện|huyen|thị xã|thi xa|thành phố|thanh pho|tp\.?)\b",
+                current,
+                flags=re.IGNORECASE,
+            )
+        )
 
     def _fix_address_parts(self, address: ExtractedAddress) -> None:
         if address.house_number:
