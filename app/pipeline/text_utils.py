@@ -47,3 +47,16 @@ def normalize_key(text: str, remove_admin_prefix: bool = True) -> str:
         parts = [p for p in key.split() if p not in ADMIN_PREFIXES]
         key = " ".join(parts)
     return key
+
+
+def normalize_text_key(text: str, remove_admin_prefix: bool = True) -> str:
+    key = unicodedata.normalize("NFKC", text or "").lower()
+    key = re.sub(r"[^\w\s]", " ", key)
+    key = re.sub(r"\s+", " ", key).strip()
+    if remove_admin_prefix:
+        for prefix in sorted(ADMIN_PREFIXES, key=len, reverse=True):
+            key = re.sub(rf"\b{re.escape(prefix)}\b", " ", key)
+        key = re.sub(r"\s+", " ", key).strip()
+        parts = [p for p in key.split() if p not in ADMIN_PREFIXES]
+        key = " ".join(parts)
+    return key

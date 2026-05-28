@@ -4,7 +4,7 @@ from typing import Any
 
 from rapidfuzz import fuzz
 
-from app.pipeline.text_utils import normalize_key
+from app.pipeline.text_utils import normalize_key, normalize_text_key
 from app.schemas.order import (
     ExtractedAddress,
     NormalizationCandidate,
@@ -42,8 +42,11 @@ class AddressNormalizer:
                         "old_district_name": None,
                         "old_ward_name": None,
                         "province_key": normalize_key(province_name),
+                        "province_text_key": normalize_text_key(province_name),
                         "district_key": "",
+                        "district_text_key": "",
                         "ward_key": normalize_key(ward.get("ward_name", "")),
+                        "ward_text_key": normalize_text_key(ward.get("ward_name", "")),
                     }
                 )
 
@@ -58,10 +61,19 @@ class AddressNormalizer:
                             "province_key": normalize_key(
                                 old.get("old_province_name") or province_name
                             ),
+                            "province_text_key": normalize_text_key(
+                                old.get("old_province_name") or province_name
+                            ),
                             "district_key": normalize_key(
                                 old.get("old_district_name") or ""
                             ),
+                            "district_text_key": normalize_text_key(
+                                old.get("old_district_name") or ""
+                            ),
                             "ward_key": normalize_key(
+                                old.get("old_ward_name") or ward.get("ward_name") or ""
+                            ),
+                            "ward_text_key": normalize_text_key(
                                 old.get("old_ward_name") or ward.get("ward_name") or ""
                             ),
                         }
@@ -83,8 +95,18 @@ class AddressNormalizer:
         province_key = normalize_key(address.province or "")
         district_key = normalize_key(address.district_hint or "")
         ward_key = normalize_key(address.ward or "")
+        province_text_key = normalize_text_key(address.province or "")
+        district_text_key = normalize_text_key(address.district_hint or "")
+        ward_text_key = normalize_text_key(address.ward or "")
 
-        candidates = self._rank_candidates(province_key, district_key, ward_key)
+        candidates = self._rank_candidates(
+            province_key,
+            district_key,
+            ward_key,
+            province_text_key,
+            district_text_key,
+            ward_text_key,
+        )
         best = candidates[0] if candidates else None
         if not best:
             warnings.append("admin_normalization_not_found")
@@ -126,9 +148,15 @@ class AddressNormalizer:
         )
 
     def _rank_candidates(
-        self, province_key: str, district_key: str, ward_key: str
+        self,
+        province_key: str,
+        district_key: str,
+        ward_key: str,
+        province_text_key: str,
+        district_text_key: str,
+        ward_text_key: str,
     ) -> list[NormalizationCandidate]:
-        scored: list[NormalizationCandidate] = []
+        scored: list[tuple[NormalizationCandidate, float, int]] = []
         for rec in self.records:
             province_score = self._score(province_key, rec["province_key"])
             if province_key and province_score < 78:
@@ -149,9 +177,19 @@ class AddressNormalizer:
                 has_province=bool(province_key),
                 has_district=bool(district_key),
             )
+            text_tie_score = self._combined_score(
+                province_score=self._score(province_text_key, rec["province_text_key"]),
+                district_score=self._score(district_text_key, rec["district_text_key"]),
+                ward_score=self._score(ward_text_key, rec["ward_text_key"]),
+                has_province=bool(province_text_key),
+                has_district=bool(district_text_key),
+            )
+            exact_text_matches = int(province_text_key == rec["province_text_key"])
+            if district_text_key:
+                exact_text_matches += int(district_text_key == rec["district_text_key"])
+            exact_text_matches += int(ward_text_key == rec["ward_text_key"])
             matched_by = "new_address" if rec["source"] == "new" else "old_address_mapping"
-            scored.append(
-                NormalizationCandidate(
+            candidate = NormalizationCandidate(
                     province_name=rec["province_name"],
                     ward_name=rec["ward_name"],
                     province_code=rec["province_code"],
@@ -162,17 +200,19 @@ class AddressNormalizer:
                     old_district_name=rec["old_district_name"],
                     old_ward_name=rec["old_ward_name"],
                 )
-            )
+            scored.append((candidate, text_tie_score, exact_text_matches))
 
         scored.sort(
-            key=lambda c: (
-                c.score,
-                c.old_district_name is not None,
-                c.matched_by == "new_address",
+            key=lambda item: (
+                item[0].score,
+                item[2],
+                item[1],
+                item[0].old_district_name is not None,
+                item[0].matched_by == "new_address",
             ),
             reverse=True,
         )
-        return scored
+        return [candidate for candidate, _, _ in scored]
 
     def _score(self, query: str, candidate: str) -> float:
         if not query:
