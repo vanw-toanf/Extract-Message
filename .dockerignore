@@ -5,3 +5,10 @@ __pycache__
 .env
 benchmark_results
 *.log
+# model files - mount as volume instead
+models/
+*.gguf
+# docs/plans
+docs/
+plan.md
+*.md

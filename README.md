@@ -143,3 +143,21 @@ Script sẽ lưu:
 
 - `*_summary.json`: latency mean/P50/P95/P99, throughput, exact match, accuracy từng field.
 - `*_predictions.jsonl`: input, expected, prediction, latency từng mẫu.
+
+## CPU Optimization
+
+Hướng dẫn tối ưu để chạy model quantized trên CPU nằm ở:
+
+```text
+docs/cpu_optimization.md
+```
+
+Cấu hình nhanh:
+
+```env
+CPU_FAST_MODE=true
+LLM_MODEL=qwen2.5:3b
+LLM_MAX_TOKENS=180
+LLM_NUM_CTX=1024
+LLM_KEEP_ALIVE=10m
+```

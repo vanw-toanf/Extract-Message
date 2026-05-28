@@ -8,39 +8,37 @@ from app.core_config import Settings
 from app.schemas.order import ExtractedOrder
 
 
-SYSTEM_PROMPT = """Bạn là hệ thống trích xuất thông tin đơn giao hàng tại Việt Nam.
-Chỉ trả về JSON hợp lệ, không markdown, không giải thích.
-Không tự bịa dữ liệu. Nếu thiếu hoặc không chắc, dùng null.
-Nếu nội dung không phải tin nhắn/đơn giao hàng hoặc không có thông tin khách hàng,
-hãy trả JSON đúng schema với tất cả trường là null.
-
-Schema bắt buộc:
-{
-  "name": string|null,
-  "note": string|null,
-  "address": {
-    "province": string|null,
-    "district_hint": string|null,
-    "ward": string|null,
-    "street": string|null,
-    "house_number": string|null
-  }
-}
-
-Quy tắc:
-- province là tỉnh/thành phố khách nhập, có thể là tên cũ hoặc tên mới.
-- district_hint là quận/huyện/thành phố cấp huyện nếu xuất hiện trong text; dùng để phân biệt xã/phường trùng tên.
-- ward là xã/phường/thị trấn khách nhập, có thể là tên cũ hoặc tên mới.
-- street gồm tên đường/ngõ/ngách/hẻm/ấp/thôn/khu phố nếu có.
-- house_number là số nhà hoặc số hẻm/ngõ chính nếu có.
-- Nếu chỉ có số nhà, xã/phường, tỉnh/thành phố mà không có đường/ngõ/ngách/hẻm,
-  street phải là null. Tuyệt đối không tự bịa tên đường.
-- note là ghi chú giao hàng, ví dụ gọi trước, giờ giao, COD, màu nhà, gần địa điểm.
-- name có thể đi kèm cách gọi như anh/chị/cô/chú/bạn + tên, ví dụ "chị Mai", "anh Nam".
-- phone đã được hệ thống regex xử lý trước, không cần trích xuất số điện thoại.
-- Nếu thấy "quận", "huyện", "q.", "h.", "tp. cấp huyện" thì điền vào district_hint, không bỏ qua.
-- Nếu địa chỉ có "số X ngõ Y đường Z", house_number là "số X", street giữ phần "ngõ Y đường Z".
+SYSTEM_PROMPT = """Trích xuất đơn giao hàng Việt Nam. Chỉ trả JSON hợp lệ, không giải thích.
+Không bịa. Thiếu/không chắc thì null. Không phải đơn hàng thì tất cả null.
+Schema: {"name":string|null,"note":string|null,"address":{"province":string|null,"district_hint":string|null,"ward":string|null,"street":string|null,"house_number":string|null}}
+Quy tắc: phone đã xử lý, không trả phone. province chỉ điền nếu text nói rõ tỉnh/thành hoặc viết tắt như HN/HCM/TPHCM; không tự suy diễn tỉnh chỉ từ quận/huyện.
+district_hint là quận/huyện/thị xã/tp cấp huyện.
+Nếu thiếu phường/xã nhưng có quận/huyện thì để quận/huyện vào ward.
+street là đường/ngõ/ngách/hẻm/khu phố/KĐT/chung cư nếu đó là landmark đường đi.
+house_number là số nhà/căn hộ/tòa nhà/POI chính, ví dụ "Căn hộ 12B, Chung cư Sunrise, 90" hoặc "Trường THPT Chu Văn An".
+Không bịa field thiếu.
 """
+
+# JSON schema dùng cho grammar-constrained generation (llamacpp)
+_OUTPUT_JSON_SCHEMA = {
+    "type": "object",
+    "properties": {
+        "name": {"type": ["string", "null"]},
+        "note": {"type": ["string", "null"]},
+        "address": {
+            "type": "object",
+            "properties": {
+                "province": {"type": ["string", "null"]},
+                "district_hint": {"type": ["string", "null"]},
+                "ward": {"type": ["string", "null"]},
+                "street": {"type": ["string", "null"]},
+                "house_number": {"type": ["string", "null"]},
+            },
+            "required": ["province", "district_hint", "ward", "street", "house_number"],
+        },
+    },
+    "required": ["name", "note", "address"],
+}
 
 
 def _extract_json_object(text: str) -> dict[str, Any]:
@@ -58,14 +56,49 @@ def _extract_json_object(text: str) -> dict[str, Any]:
 class LLMClient:
     def __init__(self, settings: Settings):
         self.settings = settings
+        self._llm: Any = None
+        # Eager load ở startup để request đầu không bị chậm
+        if settings.llm_provider == "llamacpp":
+            self._get_llm()
+
+    def _get_llm(self) -> Any:
+        if self._llm is None:
+            from llama_cpp import Llama  # type: ignore[import]
+
+            self._llm = Llama(
+                model_path=str(self.settings.llm_model_path),
+                n_ctx=self.settings.llm_num_ctx,
+                n_threads=self.settings.llm_threads,
+                n_gpu_layers=0,  # CPU only
+                verbose=False,
+            )
+        return self._llm
 
     def extract_order(self, text: str) -> tuple[ExtractedOrder, Any]:
-        if self.settings.llm_provider == "openai_compatible":
+        if self.settings.llm_provider == "llamacpp":
+            raw = self._llamacpp_chat(text)
+        elif self.settings.llm_provider == "openai_compatible":
             raw = self._openai_compatible_chat(text)
         else:
             raw = self._ollama_chat(text)
         data = _extract_json_object(raw)
         return ExtractedOrder.model_validate(data), raw
+
+    def _llamacpp_chat(self, text: str) -> str:
+        llm = self._get_llm()
+        response = llm.create_chat_completion(
+            messages=[
+                {"role": "system", "content": SYSTEM_PROMPT},
+                {"role": "user", "content": text},
+            ],
+            temperature=0,
+            max_tokens=self.settings.llm_max_tokens,
+            response_format={
+                "type": "json_object",
+                "schema": _OUTPUT_JSON_SCHEMA,
+            },
+        )
+        return response["choices"][0]["message"]["content"]
 
     def _ollama_chat(self, text: str) -> str:
         url = self.settings.llm_base_url.rstrip("/") + "/api/chat"
@@ -73,7 +106,12 @@ class LLMClient:
             "model": self.settings.llm_model,
             "stream": False,
             "format": "json",
-            "options": {"temperature": 0},
+            "keep_alive": self.settings.llm_keep_alive,
+            "options": {
+                "temperature": 0,
+                "num_predict": self.settings.llm_max_tokens,
+                "num_ctx": self.settings.llm_num_ctx,
+            },
             "messages": [
                 {"role": "system", "content": SYSTEM_PROMPT},
                 {"role": "user", "content": text},
@@ -95,6 +133,7 @@ class LLMClient:
         payload = {
             "model": self.settings.llm_model,
             "temperature": 0,
+            "max_tokens": self.settings.llm_max_tokens,
             "response_format": {"type": "json_object"},
             "messages": [
                 {"role": "system", "content": SYSTEM_PROMPT},

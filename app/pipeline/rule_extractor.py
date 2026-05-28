@@ -17,11 +17,14 @@ LEADING_HOUSE_RE = re.compile(
     flags=re.IGNORECASE,
 )
 WARD_RE = re.compile(
-    r"\b(?:p\.?|phường|phuong|xã|xa|tt\.?|thị trấn|thi tran)\s+([^,.;\n]+)",
+    r"\b(p\.?\s*\d+|p\.\s*[^,.;\n]+|p\s+[^,.;\n]+|phường\s+[^,.;\n]+|phuong\s+[^,.;\n]+|"
+    r"xã\s+[^,.;\n]+|xa\s+[^,.;\n]+|tt\.\s*[^,.;\n]+|thị trấn\s+[^,.;\n]+|thi tran\s+[^,.;\n]+)",
     flags=re.IGNORECASE,
 )
 DISTRICT_RE = re.compile(
-    r"\b(?:q\.?|quận|quan|h\.?|huyện|huyen|tx\.?|thị xã|thi xa)\s+([^,.;\n]+)",
+    r"\b(q\.?\s*\d+|q\.\s*[^,.;\n]+|q\s+[^,.;\n]+|quận\s+[^,.;\n]+|quan\s+[^,.;\n]+|"
+    r"h\.\s*[^,.;\n]+|h\s+[^,.;\n]+|huyện\s+[^,.;\n]+|huyen\s+[^,.;\n]+|"
+    r"tx\.\s*[^,.;\n]+|thị xã\s+[^,.;\n]+|thi xa\s+[^,.;\n]+)",
     flags=re.IGNORECASE,
 )
 STREET_RE = re.compile(
@@ -29,16 +32,40 @@ STREET_RE = re.compile(
     r"((?:đường|duong|phố|pho)\s+[^,.;\n]+)",
     flags=re.IGNORECASE,
 )
+NOTE_RE = re.compile(
+    r"\b(?:note|ghi chú|ghi chu)\s*[:：]?\s*([^.;\n]+(?:[.;]\s*[^.;\n]+)?)",
+    flags=re.IGNORECASE,
+)
+SIMPLE_NOTE_RE = re.compile(
+    r"\b(gọi trước[^.;\n]*|goi truoc[^.;\n]*|giao giờ[^.;\n]*|giao gio[^.;\n]*|"
+    r"ship sau[^.;\n]*|thu cod[^.;\n]*|cod\s*\d+[kK]?|"
+    r"để hàng[^.;\n]*|de hang[^.;\n]*|chuyển khoản rồi|chuyen khoan roi)",
+    flags=re.IGNORECASE,
+)
 
 
 def extract_rule_hints(text: str) -> tuple[str | None, ExtractedAddress]:
     return _extract_name(text), ExtractedAddress(
         province=_extract_province(text),
-        district_hint=_extract_first(DISTRICT_RE, text),
-        ward=_extract_first(WARD_RE, text),
+        district_hint=_extract_district(text),
+        ward=_extract_ward(text),
         street=_extract_street(text),
         house_number=_extract_house_number(text),
     )
+
+
+def extract_rule_note(text: str) -> str | None:
+    match = NOTE_RE.search(text or "")
+    if match:
+        return match.group(1).strip(" ,;.")
+    matches = [m.group(1).strip(" ,;.") for m in SIMPLE_NOTE_RE.finditer(text or "")]
+    if not matches:
+        return None
+    deduped = []
+    for match_text in matches:
+        if match_text.lower() not in {item.lower() for item in deduped}:
+            deduped.append(match_text)
+    return ", ".join(deduped)
 
 
 def _extract_name(text: str) -> str | None:
@@ -82,3 +109,41 @@ def _extract_street(text: str) -> str | None:
 def _extract_first(pattern: re.Pattern[str], text: str) -> str | None:
     match = pattern.search(text or "")
     return match.group(1).strip() if match else None
+
+
+def _extract_ward(text: str) -> str | None:
+    match = WARD_RE.search(text or "")
+    if not match:
+        return None
+    raw = match.group(1).strip()
+    raw_lower = raw.lower()
+    name = re.sub(
+        r"^(phường|phuong|thị trấn|thi tran|p\.?|xã|xa|tt\.?)\s*",
+        "",
+        raw,
+        flags=re.IGNORECASE,
+    ).strip()
+    if raw_lower.startswith(("p", "phường", "phuong")):
+        return f"Phường {name}"
+    if raw_lower.startswith(("xã", "xa")):
+        return f"Xã {name}"
+    return f"Thị trấn {name}"
+
+
+def _extract_district(text: str) -> str | None:
+    match = DISTRICT_RE.search(text or "")
+    if not match:
+        return None
+    raw = match.group(1).strip()
+    raw_lower = raw.lower()
+    name = re.sub(
+        r"^(quận|quan|huyện|huyen|thị xã|thi xa|q\.?|h\.?|tx\.?)\s*",
+        "",
+        raw,
+        flags=re.IGNORECASE,
+    ).strip()
+    if raw_lower.startswith(("q", "quận", "quan")):
+        return f"Quận {name}"
+    if raw_lower.startswith(("h.", "huyện", "huyen")):
+        return f"Huyện {name}"
+    return f"Thị xã {name}"

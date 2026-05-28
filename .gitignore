@@ -216,3 +216,10 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Model weights - quá lớn cho git
+models/
+*.gguf
+
+# Benchmark output artifacts - regenerate bằng scripts/run_benchmark.py
+benchmark_results/
