@@ -1,0 +1,88 @@
+{
+  "model": "qwen2.5:3b",
+  "total": 200,
+  "successful": 200,
+  "failed": 0,
+  "latency_seconds": {
+    "mean": 4.232,
+    "median_p50": 4.2117,
+    "p95": 4.8626,
+    "p99": 5.1282,
+    "min": 3.4255,
+    "max": 5.458
+  },
+  "throughput_orders_per_minute": 14.1778,
+  "full_exact_match": {
+    "accuracy": 0.43,
+    "exact_count": 86,
+    "total": 200
+  },
+  "field_metrics": {
+    "name": {
+      "exact_accuracy": 0.955,
+      "precision": 0.955,
+      "recall": 0.955,
+      "f1": 0.955,
+      "token_f1_avg": 0.9815,
+      "exact_count": 191,
+      "total": 200
+    },
+    "phone": {
+      "exact_accuracy": 1.0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "token_f1_avg": 1.0,
+      "exact_count": 200,
+      "total": 200
+    },
+    "note": {
+      "exact_accuracy": 0.655,
+      "precision": 0.7318,
+      "recall": 0.655,
+      "f1": 0.6913,
+      "token_f1_avg": 0.7976,
+      "exact_count": 131,
+      "total": 200
+    },
+    "address.province": {
+      "exact_accuracy": 0.865,
+      "precision": 0.8964,
+      "recall": 0.865,
+      "f1": 0.8804,
+      "token_f1_avg": 0.9099,
+      "exact_count": 173,
+      "total": 200
+    },
+    "address.ward": {
+      "exact_accuracy": 0.8,
+      "precision": 0.8743,
+      "recall": 0.8,
+      "f1": 0.8355,
+      "token_f1_avg": 0.8296,
+      "exact_count": 160,
+      "total": 200
+    },
+    "address.street": {
+      "exact_accuracy": 0.935,
+      "precision": 0.935,
+      "recall": 0.935,
+      "f1": 0.935,
+      "token_f1_avg": 0.9771,
+      "exact_count": 187,
+      "total": 200
+    },
+    "address.house_number": {
+      "exact_accuracy": 0.9,
+      "precision": 0.9574,
+      "recall": 0.9,
+      "f1": 0.9278,
+      "token_f1_avg": 0.92,
+      "exact_count": 180,
+      "total": 200
+    }
+  },
+  "wall_seconds": 846.4276,
+  "concurrency": 1,
+  "warmup": 5
+}
