@@ -17,8 +17,7 @@ Input:
 
 ```json
 {
-  "text": "chị Lan 0909123456 giao 15 Lũy Bán Bích, Tân Quý, Tân Phú, HCM gọi trước",
-  "use_llm": true
+  "text": "chị Lan 0909123456 giao 15 Lũy Bán Bích, Tân Quý, Tân Phú, HCM gọi trước"
 }
 ```
 

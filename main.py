@@ -29,7 +29,7 @@ def health() -> dict[str, str]:
 
 @app.post("/parse-text", response_model=ParseResponse)
 def parse_text(request: ParseRequest) -> ParseResponse:
-    return get_parser().parse(request.text, use_llm=request.use_llm)
+    return get_parser().parse(request.text, use_llm=True)
 
 
 @app.post("/ocr-image", response_model=OcrResponse)

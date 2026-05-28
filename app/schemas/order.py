@@ -52,7 +52,6 @@ class NormalizedAddress(BaseModel):
 
 class ParseRequest(BaseModel):
     text: str
-    use_llm: bool = True
 
 
 class ParseResponse(BaseModel):
