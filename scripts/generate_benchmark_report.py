@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import argparse
 import html
 import json
 from pathlib import Path
@@ -50,10 +51,13 @@ def esc(value: Any) -> str:
     return html.escape("" if value is None else str(value))
 
 
-def collect_runs() -> list[dict[str, Any]]:
+def collect_runs(include: list[str] | None = None) -> list[dict[str, Any]]:
     runs = []
-    for summary_path in sorted(RESULTS_DIR.glob("qwen25_*/*_summary.json")):
+    for summary_path in sorted(RESULTS_DIR.glob("*/*_summary.json")):
         if "smoke" in summary_path.parts:
+            continue
+        path_text = str(summary_path)
+        if include and not any(token in path_text for token in include):
             continue
         prediction_path = summary_path.with_name(
             summary_path.name.replace("_summary.json", "_predictions.jsonl")
@@ -66,18 +70,16 @@ def collect_runs() -> list[dict[str, Any]]:
                 "prediction_path": prediction_path,
                 "summary": load_json(summary_path),
                 "predictions": load_jsonl(prediction_path),
+                "mtime": summary_path.stat().st_mtime,
             }
         )
+    return sorted(runs, key=lambda run: (run["mtime"], str(run["summary_path"])))
+
+
+def select_runs(runs: list[dict[str, Any]], latest: int | None = None) -> list[dict[str, Any]]:
+    if latest and latest > 0:
+        return runs[-latest:]
     return runs
-
-
-def primary_runs(runs: list[dict[str, Any]]) -> list[dict[str, Any]]:
-    preferred = [
-        run
-        for run in runs
-        if any(token in str(run["summary_path"]) for token in ("real", "rerun"))
-    ]
-    return preferred or runs
 
 
 def prediction_signature(row: dict[str, Any]) -> str:
@@ -220,9 +222,11 @@ def render_all_examples(runs: list[dict[str, Any]]) -> str:
 
 
 def render_report(runs: list[dict[str, Any]]) -> str:
-    runs = primary_runs(runs)
     comparison = compare_predictions(runs)
     models = ", ".join(run["summary"]["model"] for run in runs)
+    total_cases = ", ".join(
+        f"{esc(run['summary']['model'])}: {run['summary']['total']}" for run in runs
+    )
     warning = ""
     recommendation = ""
     notes = ""
@@ -286,11 +290,18 @@ def render_report(runs: list[dict[str, Any]]) -> str:
             </ul>
             """
         else:
-            best = min(runs, key=lambda run: run["summary"]["latency_seconds"]["p95"])
+            best_latency = min(
+                runs, key=lambda run: run["summary"]["latency_seconds"]["p95"]
+            )
+            best_accuracy = max(
+                runs, key=lambda run: run["summary"]["full_exact_match"]["accuracy"]
+            )
             recommendation = f"""
             <p>
-              Khuyến nghị sơ bộ: ưu tiên <strong>{esc(best['summary']['model'])}</strong>
-              nếu accuracy không thấp hơn đáng kể, vì P95 latency tốt hơn.
+              Khuyến nghị sơ bộ: <strong>{esc(best_latency['summary']['model'])}</strong>
+              có P95 latency tốt nhất, còn <strong>{esc(best_accuracy['summary']['model'])}</strong>
+              có full exact cao nhất. Nếu chênh lệch accuracy nhỏ, ưu tiên model latency thấp hơn
+              cho môi trường CPU.
             </p>
             """
 
@@ -400,7 +411,7 @@ def render_report(runs: list[dict[str, Any]]) -> str:
   <section class="panel">
     <h2>Tổng Quan</h2>
     <p><strong>Models:</strong> {esc(models)}</p>
-    <p><strong>Dataset:</strong> 200 mẫu, gồm 150 địa chỉ cũ cần mapping và 50 địa chỉ mới.</p>
+    <p><strong>Số mẫu:</strong> {total_cases}</p>
     {warning}
     {recommendation}
   </section>
@@ -446,13 +457,41 @@ def render_report(runs: list[dict[str, Any]]) -> str:
 """
 
 
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description="Generate benchmark HTML report")
+    parser.add_argument(
+        "--include",
+        action="append",
+        default=None,
+        help="Only include runs whose path contains this text. Can be repeated.",
+    )
+    parser.add_argument(
+        "--latest",
+        type=int,
+        default=None,
+        help="Only include the N most recently modified benchmark runs.",
+    )
+    parser.add_argument(
+        "--output",
+        default=str(OUTPUT),
+        help="Output HTML path.",
+    )
+    return parser.parse_args()
+
+
 def main() -> None:
-    runs = collect_runs()
+    args = parse_args()
+    runs = select_runs(collect_runs(args.include), args.latest)
     if not runs:
         raise SystemExit("No benchmark summary files found")
     html_text = render_report(runs)
-    OUTPUT.write_text(html_text, encoding="utf-8")
-    print(f"Wrote {OUTPUT}")
+    output = Path(args.output)
+    output.parent.mkdir(parents=True, exist_ok=True)
+    output.write_text(html_text, encoding="utf-8")
+    print("Included runs:")
+    for run in runs:
+        print(f"- {run['summary']['model']} ({run['summary_path']})")
+    print(f"Wrote {output}")
 
 
 if __name__ == "__main__":

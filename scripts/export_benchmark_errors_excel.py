@@ -9,16 +9,15 @@ import pandas as pd
 ROOT = Path(__file__).resolve().parents[1]
 OUTPUT = ROOT / "benchmark_results" / "benchmark_errors.xlsx"
 
-RUNS = {
-    "qwen2.5_3b": ROOT
-    / "benchmark_results"
-    / "qwen25_3b_real_run1"
-    / "qwen2.5_3b_predictions.jsonl",
-    "qwen2.5_7b": ROOT
-    / "benchmark_results"
-    / "qwen25_7b_rerun1"
-    / "qwen2.5_7b_predictions.jsonl",
-}
+def _discover_runs() -> dict[str, Path]:
+    results: dict[str, Path] = {}
+    for p in sorted((ROOT / "benchmark_results").glob("*/*_predictions.jsonl")):
+        if "smoke" in p.parts:
+            continue
+        results[p.parent.name] = p
+    return results
+
+RUNS = _discover_runs()
 
 FIELDS = [
     "name",
