@@ -43,7 +43,7 @@ class OrderParser:
             extracted.phone = regex_phone
         if not extracted.name and rule_name:
             extracted.name = rule_name
-        if not extracted.note and rule_note:
+        if rule_note:
             extracted.note = rule_note
         self._merge_address_hints(extracted.address, rule_address)
 

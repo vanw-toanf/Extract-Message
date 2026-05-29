@@ -18,7 +18,8 @@ LEADING_HOUSE_RE = re.compile(
 )
 WARD_RE = re.compile(
     r"\b(p\.?\s*\d+|p\.\s*[^,.;\n]+|p\s+[^,.;\n]+|phường\s+[^,.;\n]+|phuong\s+[^,.;\n]+|"
-    r"xã\s+[^,.;\n]+|xa\s+[^,.;\n]+|tt\.\s*[^,.;\n]+|thị trấn\s+[^,.;\n]+|thi tran\s+[^,.;\n]+)",
+    r"x\.\s*[^,.;\n]+|x\s+[^,.;\n]+|xã\s+[^,.;\n]+|xa\s+[^,.;\n]+|"
+    r"tt\.\s*[^,.;\n]+|thị trấn\s+[^,.;\n]+|thi tran\s+[^,.;\n]+)",
     flags=re.IGNORECASE,
 )
 DISTRICT_RE = re.compile(
@@ -118,14 +119,14 @@ def _extract_ward(text: str) -> str | None:
     raw = match.group(1).strip()
     raw_lower = raw.lower()
     name = re.sub(
-        r"^(phường|phuong|thị trấn|thi tran|p\.?|xã|xa|tt\.?)\s*",
+        r"^(phường|phuong|thị trấn|thi tran|p\.?|x\.?|xã|xa|tt\.?)\s*",
         "",
         raw,
         flags=re.IGNORECASE,
     ).strip()
     if raw_lower.startswith(("p", "phường", "phuong")):
         return f"Phường {name}"
-    if raw_lower.startswith(("xã", "xa")):
+    if raw_lower.startswith(("x.", "x ", "xã", "xa")):
         return f"Xã {name}"
     return f"Thị trấn {name}"
 
