@@ -1,131 +1,133 @@
 {
-  "92": [
-    "Tỉnh Hậu Giang",
-    "Thành phố Cần Thơ",
-    "Tỉnh Sóc Trăng"
-  ],
-  "48": [
-    "Thành phố Đà Nẵng",
-    "Tỉnh Quảng Nam"
-  ],
-  "31": [
-    "Tỉnh Hải Dương",
-    "Thành phố Hải Phòng"
-  ],
-  "79": [
-    "Tỉnh Bà Rịa - Vũng Tàu",
-    "Tỉnh Bình Dương"
-  ],
-  "46": [
-    "Tỉnh Thừa Thiên Huế"
-  ],
   "01": [
     "Thành phố Hà Nội"
   ],
-  "91": [
-    "Tỉnh Kiên Giang",
-    "Tỉnh An Giang"
-  ],
-  "24": [
-    "Tỉnh Bắc Ninh",
-    "Tỉnh Bắc Giang"
-  ],
-  "96": [
-    "Tỉnh Bạc Liêu",
-    "Tỉnh Cà Mau"
-  ],
   "04": [
     "Tỉnh Cao Bằng"
-  ],
-  "66": [
-    "Tỉnh Đắk Lắk",
-    "Tỉnh Phú Yên"
-  ],
-  "11": [
-    "Tỉnh Điện Biên"
-  ],
-  "75": [
-    "Tỉnh Bình Phước",
-    "Tỉnh Đồng Nai"
-  ],
-  "82": [
-    "Tỉnh Đồng Tháp",
-    "Tỉnh Tiền Giang"
-  ],
-  "52": [
-    "Tỉnh Gia Lai",
-    "Tỉnh Bình Định"
-  ],
-  "42": [
-    "Tỉnh Hà Tĩnh"
-  ],
-  "33": [
-    "Tỉnh Thái Bình",
-    "Tỉnh Hưng Yên"
-  ],
-  "56": [
-    "Tỉnh Ninh Thuận",
-    "Tỉnh Khánh Hòa"
-  ],
-  "12": [
-    "Tỉnh Lai Châu"
-  ],
-  "68": [
-    "Tỉnh Đắk Nông",
-    "Tỉnh Lâm Đồng",
-    "Tỉnh Bình Thuận"
-  ],
-  "20": [
-    "Tỉnh Lạng Sơn"
-  ],
-  "15": [
-    "Tỉnh Lào Cai",
-    "Tỉnh Yên Bái"
-  ],
-  "40": [
-    "Tỉnh Nghệ An"
-  ],
-  "37": [
-    "Tỉnh Nam Định",
-    "Tỉnh Ninh Bình",
-    "Tỉnh Hà Nam"
-  ],
-  "25": [
-    "Tỉnh Phú Thọ",
-    "Tỉnh Vĩnh Phúc"
-  ],
-  "51": [
-    "Tỉnh Kon Tum",
-    "Tỉnh Quảng Ngãi"
-  ],
-  "22": [
-    "Tỉnh Quảng Ninh"
-  ],
-  "44": [
-    "Tỉnh Quảng Trị",
-    "Tỉnh Quảng Bình"
-  ],
-  "14": [
-    "Tỉnh Sơn La"
-  ],
-  "80": [
-    "Tỉnh Tây Ninh",
-    "Tỉnh Long An"
-  ],
-  "19": [
-    "Tỉnh Thái Nguyên",
-    "Tỉnh Bắc Kạn"
-  ],
-  "38": [
-    "Tỉnh Thanh Hóa"
   ],
   "08": [
     "Tỉnh Hà Giang",
     "Tỉnh Tuyên Quang"
   ],
+  "11": [
+    "Tỉnh Điện Biên"
+  ],
+  "12": [
+    "Tỉnh Lai Châu"
+  ],
+  "14": [
+    "Tỉnh Sơn La"
+  ],
+  "15": [
+    "Tỉnh Yên Bái",
+    "Tỉnh Lào Cai"
+  ],
+  "19": [
+    "Tỉnh Bắc Kạn",
+    "Tỉnh Thái Nguyên"
+  ],
+  "20": [
+    "Tỉnh Lạng Sơn"
+  ],
+  "22": [
+    "Tỉnh Quảng Ninh"
+  ],
+  "24": [
+    "Tỉnh Bắc Giang",
+    "Tỉnh Bắc Ninh"
+  ],
+  "25": [
+    "Tỉnh Hòa Bình",
+    "Tỉnh Phú Thọ",
+    "Tỉnh Vĩnh Phúc"
+  ],
+  "31": [
+    "Tỉnh Hải Dương",
+    "Thành phố Hải Phòng"
+  ],
+  "33": [
+    "Tỉnh Hưng Yên",
+    "Tỉnh Thái Bình"
+  ],
+  "37": [
+    "Tỉnh Hà Nam",
+    "Tỉnh Nam Định",
+    "Tỉnh Ninh Bình"
+  ],
+  "38": [
+    "Tỉnh Thanh Hóa"
+  ],
+  "40": [
+    "Tỉnh Nghệ An"
+  ],
+  "42": [
+    "Tỉnh Hà Tĩnh"
+  ],
+  "44": [
+    "Tỉnh Quảng Bình",
+    "Tỉnh Quảng Trị"
+  ],
+  "46": [
+    "Tỉnh Thừa Thiên Huế"
+  ],
+  "48": [
+    "Thành phố Đà Nẵng",
+    "Tỉnh Quảng Nam"
+  ],
+  "51": [
+    "Tỉnh Kon Tum",
+    "Tỉnh Quảng Ngãi"
+  ],
+  "52": [
+    "Tỉnh Bình Định",
+    "Tỉnh Gia Lai"
+  ],
+  "56": [
+    "Tỉnh Khánh Hòa",
+    "Tỉnh Ninh Thuận"
+  ],
+  "66": [
+    "Tỉnh Đắk Lắk",
+    "Tỉnh Phú Yên"
+  ],
+  "68": [
+    "Tỉnh Bình Thuận",
+    "Tỉnh Đắk Nông",
+    "Tỉnh Lâm Đồng"
+  ],
+  "75": [
+    "Tỉnh Bình Phước",
+    "Tỉnh Đồng Nai"
+  ],
+  "79": [
+    "Thành phố Hồ Chí Minh",
+    "Tỉnh Bà Rịa - Vũng Tàu",
+    "Tỉnh Bình Dương"
+  ],
+  "80": [
+    "Tỉnh Long An",
+    "Tỉnh Tây Ninh"
+  ],
+  "82": [
+    "Tỉnh Đồng Tháp",
+    "Tỉnh Tiền Giang"
+  ],
   "86": [
     "Tỉnh Bến Tre",
-    "Tỉnh Vĩnh Long",
-    "Tỉnh Trà Vinh"
+    "Tỉnh Trà Vinh",
+    "Tỉnh Vĩnh Long"
+  ],
+  "91": [
+    "Tỉnh An Giang",
+    "Tỉnh Kiên Giang"
+  ],
+  "92": [
+    "Thành phố Cần Thơ",
+    "Tỉnh Hậu Giang",
+    "Tỉnh Sóc Trăng"
+  ],
+  "96": [
+    "Tỉnh Bạc Liêu",
+    "Tỉnh Cà Mau"
   ]
 }
