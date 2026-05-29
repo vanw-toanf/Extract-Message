@@ -248,8 +248,8 @@ def main() -> None:
     summary["concurrency"] = args.concurrency
     summary["warmup"] = args.warmup
 
-    output_dir = Path(args.output_dir)
     safe_model_name = args.model_name.replace("/", "_").replace(":", "_")
+    output_dir = Path(args.output_dir) / safe_model_name
     write_jsonl(output_dir / f"{safe_model_name}_predictions.jsonl", results)
     write_json(output_dir / f"{safe_model_name}_summary.json", summary)
 

@@ -105,7 +105,6 @@ class LLMClient:
         payload = {
             "model": self.settings.llm_model,
             "stream": False,
-            "format": "json",
             "keep_alive": self.settings.llm_keep_alive,
             "options": {
                 "temperature": 0,
