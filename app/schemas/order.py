@@ -12,18 +12,29 @@ class ExtractedAddress(BaseModel):
     house_number: str | None = None
 
 
-class PublicAddress(BaseModel):
-    province: str | None = None
-    ward: str | None = None
+class PublicAddressInfo(BaseModel):
+    address_number: str | None = None
     street: str | None = None
-    house_number: str | None = None
+    neighborhood: str | None = None
+    municipality: str | None = None
+    sub_region: str | None = None
+    country: str | None = None
 
 
 class ExtractedOrder(BaseModel):
     name: str | None = None
     phone: str | None = None
     note: str | None = None
+    address_raw: str | None = None
     address: ExtractedAddress = Field(default_factory=ExtractedAddress)
+
+
+class LLMExtractedOrder(BaseModel):
+    recipient_name: str | None = None
+    phone_number: str | None = None
+    note: str | None = None
+    address_raw: str | None = None
+    address_info: PublicAddressInfo = Field(default_factory=PublicAddressInfo)
 
 
 class NormalizationCandidate(BaseModel):
@@ -54,11 +65,21 @@ class ParseRequest(BaseModel):
     text: str
 
 
+class FinalAddressInfo(BaseModel):
+    address_number: str | None = None
+    street: str | None = None
+    municipality: str | None = None
+    sub_region: str | None = None
+    country: str | None = None
+
+
 class ParseResponse(BaseModel):
-    name: str | None = None
-    phone: str | None = None
+    recipient_name: str | None = None
+    phone_number: str | None = None
     note: str | None = None
-    address: PublicAddress = Field(default_factory=PublicAddress)
+    address_raw: str | None = None
+    address_new: str | None = None
+    address_info: FinalAddressInfo = Field(default_factory=FinalAddressInfo)
 
 
 class OcrResponse(BaseModel):

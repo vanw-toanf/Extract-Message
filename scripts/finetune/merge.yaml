@@ -1,0 +1,11 @@
+### Merge LoRA adapter vào base model, export ra HuggingFace format
+### Sau đó có thể convert sang GGUF để chạy trên Ollama
+
+model_name_or_path: ../../models/Qwen2.5-7B-Instruct
+adapter_name_or_path: ../../output/qwen25_7b_vin_lora
+finetuning_type: lora
+
+export_dir: ../../output/qwen25_7b_merged
+export_size: 2          # shard 2GB mỗi file
+export_device: cuda     # train xong, VRAM trống — dùng GPU nhanh hơn và tránh OOM RAM
+export_legacy_format: false

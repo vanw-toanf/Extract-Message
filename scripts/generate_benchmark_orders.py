@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import json
 import random
+import re
 from pathlib import Path
 
 
@@ -71,6 +72,45 @@ def clean_name(value: str | None) -> str | None:
     if not value:
         return None
     return " ".join(value.split())
+
+
+def recipient_name(value: str | None) -> str | None:
+    name = clean_name(value)
+    if not name:
+        return None
+    return re.sub(
+        r"^(?:anh|chị|chi|cô|co|chú|chu|bạn|ban|bé|be|b|c|a)\s+",
+        "",
+        name,
+        flags=re.IGNORECASE,
+    ) or None
+
+
+def public_expected(expected: dict) -> dict:
+    address = expected["address"]
+    first_line = " ".join(
+        part for part in (address["house_number"], address["street"]) if part
+    )
+    address_new = ", ".join(
+        part
+        for part in (first_line or None, address["ward"], address["province"])
+        if part
+    ) or None
+    return {
+        "recipient_name": recipient_name(expected["name"]),
+        "phone_number": expected["phone"],
+        "note": expected["note"],
+        "address_raw": expected.get("_address_raw"),
+        "address_new": address_new,
+        "address_info": {
+            "address_number": address["house_number"],
+            "street": address["street"],
+            "neighborhood": None,
+            "municipality": address["ward"],
+            "sub_region": address["province"],
+            "country": "VNM" if address_new else None,
+        },
+    }
 
 
 def phone_for(index: int) -> str:
@@ -261,6 +301,7 @@ def render_input(entry: dict, index: int) -> tuple[str, dict]:
         "name": name,
         "phone": phone,
         "note": note if index % 8 not in {1} else f"{note}, {note2}",
+        "_address_raw": f"{house} {street}, {admin_tail}",
         "address": {
             "province": entry["expected_province"],
             "ward": entry["expected_ward"],
@@ -786,7 +827,7 @@ def main() -> None:
                 "id": f"bench_{idx:03d}",
                 "category": entry["source"],
                 "input": text,
-                "expected": expected,
+                "expected": public_expected(expected),
             }
             f.write(json.dumps(row, ensure_ascii=False) + "\n")
         for edge_idx in range(80):
@@ -795,7 +836,7 @@ def main() -> None:
                 "id": f"bench_{len(selected) + edge_idx + 1:03d}",
                 "category": f"edge_{category}",
                 "input": text,
-                "expected": expected,
+                "expected": public_expected(expected),
             }
             f.write(json.dumps(row, ensure_ascii=False) + "\n")
 

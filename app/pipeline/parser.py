@@ -2,10 +2,15 @@ import re
 
 from app.core_config import Settings
 from app.pipeline.address_normalizer import AddressNormalizer
-from app.pipeline.phone_extractor import extract_phone, normalize_phone, remove_phone
+from app.pipeline.phone_extractor import extract_phone, mask_phone, normalize_phone
 from app.pipeline.rule_extractor import extract_rule_hints, extract_rule_note
 from app.pipeline.text_utils import compact_text
-from app.schemas.order import ExtractedAddress, ExtractedOrder, ParseResponse, PublicAddress
+from app.schemas.order import (
+    ExtractedAddress,
+    ExtractedOrder,
+    FinalAddressInfo,
+    ParseResponse,
+)
 from app.services.llm_client import LLMClient
 
 
@@ -22,7 +27,7 @@ class OrderParser:
         regex_phone = extract_phone(cleaned)
         rule_name, rule_address = extract_rule_hints(cleaned)
         rule_note = extract_rule_note(cleaned)
-        llm_input = compact_text(remove_phone(cleaned))
+        llm_input = compact_text(mask_phone(cleaned))
 
         if not self._is_likely_order(cleaned, regex_phone, rule_address):
             return ParseResponse()
@@ -49,20 +54,48 @@ class OrderParser:
 
         extracted.phone = self._normalize_phone(extracted.phone)
         self._fix_address_parts(extracted.address)
+        address_raw = extracted.address_raw or self._format_address(
+            extracted.address.house_number,
+            extracted.address.street,
+            extracted.address.ward,
+            extracted.address.district_hint,
+            extracted.address.province,
+        )
         normalized_address = self.address_normalizer.normalize(extracted.address)
 
+        address_number = (
+            normalized_address.house_number or extracted.address.house_number
+        )
+        street = normalized_address.street or extracted.address.street
+        municipality = (
+            normalized_address.ward
+            or extracted.address.ward
+            or extracted.address.district_hint
+        )
+        sub_region = normalized_address.province or extracted.address.province
+        if not sub_region and municipality:
+            sub_region = self.address_normalizer.infer_province_from_municipality(municipality)
+        address_new = self._format_address(
+            address_number,
+            street,
+            municipality,
+            sub_region,
+        )
+        has_address = bool(
+            address_raw or address_number or street or municipality or sub_region
+        )
         return ParseResponse(
-            name=extracted.name,
-            phone=extracted.phone,
+            recipient_name=self._strip_recipient_honorific(extracted.name),
+            phone_number=extracted.phone,
             note=extracted.note,
-            address=PublicAddress(
-                province=normalized_address.province or extracted.address.province,
-                ward=normalized_address.ward
-                or extracted.address.ward
-                or extracted.address.district_hint,
-                street=normalized_address.street or extracted.address.street,
-                house_number=normalized_address.house_number
-                or extracted.address.house_number,
+            address_raw=address_raw,
+            address_new=address_new,
+            address_info=FinalAddressInfo(
+                address_number=address_number,
+                street=street,
+                municipality=municipality,
+                sub_region=sub_region,
+                country="VNM" if has_address else None,
             ),
         )
 
@@ -198,3 +231,30 @@ class OrderParser:
             if clean_lower not in {p.lower() for p in parts}:
                 parts.append(clean)
         return " ".join(parts) if parts else None
+
+    def _format_address(
+        self,
+        address_number: str | None,
+        street: str | None,
+        municipality: str | None,
+        sub_region: str | None,
+        province: str | None = None,
+    ) -> str | None:
+        first_line = self._join_street(address_number, street)
+        parts: list[str] = []
+        for part in (first_line, municipality, sub_region, province):
+            clean = (part or "").strip(" ,")
+            if clean and clean.lower() not in {item.lower() for item in parts}:
+                parts.append(clean)
+        return ", ".join(parts) if parts else None
+
+    def _strip_recipient_honorific(self, name: str | None) -> str | None:
+        if not name:
+            return None
+        cleaned = re.sub(
+            r"^(?:anh|chị|chi|cô|co|chú|chu|bạn|ban|bé|be|b|c|a)\s+",
+            "",
+            name.strip(),
+            flags=re.IGNORECASE,
+        )
+        return cleaned or None

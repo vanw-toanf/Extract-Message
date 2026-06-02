@@ -8,14 +8,18 @@ Output cuối cùng là JSON chuẩn để tự động điền form tạo đơn
 
 ```json
 {
-  "name": "chị Linh",
-  "phone": "0904123604",
+  "recipient_name": "Linh",
+  "phone_number": "0904123604",
   "note": "nhà trong hẻm, tới nơi gọi trước",
-  "address": {
-    "province": "Tỉnh Thái Nguyên",
-    "ward": "Phường Sông Công",
+  "address_raw": "14 đường Cầu Diễn, Phường Cải Đan, Thành phố Sông Công, Thái Nguyên",
+  "address_new": "14 đường Cầu Diễn, Phường Sông Công, Tỉnh Thái Nguyên",
+  "address_info": {
+    "address_number": "14",
     "street": "đường Cầu Diễn",
-    "house_number": "14"
+    "neighborhood": null,
+    "municipality": "Phường Sông Công",
+    "sub_region": "Tỉnh Thái Nguyên",
+    "country": "VNM"
   }
 }
 ```
@@ -129,14 +133,18 @@ Output:
 
 ```json
 {
-  "name": null,
-  "phone": null,
+  "recipient_name": null,
+  "phone_number": null,
   "note": null,
-  "address": {
-    "province": null,
-    "ward": null,
+  "address_raw": null,
+  "address_new": null,
+  "address_info": {
+    "address_number": null,
     "street": null,
-    "house_number": null
+    "neighborhood": null,
+    "municipality": null,
+    "sub_region": null,
+    "country": null
   }
 }
 ```

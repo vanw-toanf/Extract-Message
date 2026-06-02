@@ -25,14 +25,18 @@ Output trả về đơn hàng đã chuẩn hóa:
 
 ```json
 {
-  "name": "chị Lan",
-  "phone": "0909123456",
+  "recipient_name": "Lan",
+  "phone_number": "0909123456",
   "note": "gọi trước",
-  "address": {
-    "province": "Thành Phố Hồ Chí Minh",
-    "ward": "Phường Phú Thọ Hòa",
+  "address_raw": "15 Lũy Bán Bích, Tân Quý, Tân Phú, HCM",
+  "address_new": "15 đường Lũy Bán Bích, Phường Phú Thọ Hòa, Thành Phố Hồ Chí Minh",
+  "address_info": {
+    "address_number": "15",
     "street": "đường Lũy Bán Bích",
-    "house_number": "15"
+    "neighborhood": null,
+    "municipality": "Phường Phú Thọ Hòa",
+    "sub_region": "Thành Phố Hồ Chí Minh",
+    "country": "VNM"
   }
 }
 ```

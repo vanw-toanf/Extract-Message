@@ -22,6 +22,15 @@ FIELDS = [
     "address.house_number",
 ]
 
+FIELD_ALIASES = {
+    "name": "recipient_name",
+    "phone": "phone_number",
+    "address.province": "address_info.sub_region",
+    "address.ward": "address_info.municipality",
+    "address.street": "address_info.street",
+    "address.house_number": "address_info.address_number",
+}
+
 
 def normalize_text(value: Any) -> str:
     if value is None:
@@ -32,6 +41,13 @@ def normalize_text(value: Any) -> str:
 
 
 def get_path(data: dict[str, Any], path: str) -> Any:
+    value = _get_path(data, path)
+    if value is None and path in FIELD_ALIASES:
+        return _get_path(data, FIELD_ALIASES[path])
+    return value
+
+
+def _get_path(data: dict[str, Any], path: str) -> Any:
     current: Any = data
     for part in path.split("."):
         if not isinstance(current, dict):
@@ -84,7 +100,7 @@ def call_parse(api_url: str, row: dict[str, Any], timeout: float) -> dict[str, A
     try:
         response = requests.post(
             api_url.rstrip("/") + "/parse-text",
-            json={"text": row["input"], "use_llm": True},
+            json={"text": row["input"]},
             timeout=timeout,
         )
         elapsed = time.perf_counter() - started

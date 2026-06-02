@@ -5,17 +5,18 @@ from typing import Any
 import requests
 
 from app.core_config import Settings
-from app.schemas.order import ExtractedOrder
+from app.schemas.order import ExtractedAddress, ExtractedOrder, LLMExtractedOrder
 
 
 SYSTEM_PROMPT = """Trích xuất đơn giao hàng Việt Nam. Chỉ trả JSON hợp lệ, không giải thích.
 Không bịa. Thiếu/không chắc thì null. Không phải đơn hàng thì tất cả null.
-Schema: {"name":string|null,"note":string|null,"address":{"province":string|null,"district_hint":string|null,"ward":string|null,"street":string|null,"house_number":string|null}}
-Quy tắc: phone đã xử lý, không trả phone. province chỉ điền nếu text nói rõ tỉnh/thành hoặc viết tắt như HN/HCM/TPHCM; không tự suy diễn tỉnh chỉ từ quận/huyện.
-district_hint là quận/huyện/thị xã/tp cấp huyện.
-Nếu thiếu phường/xã nhưng có quận/huyện thì để quận/huyện vào ward.
-street là đường/ngõ/ngách/hẻm/khu phố/KĐT/chung cư nếu đó là landmark đường đi.
-house_number là số nhà/căn hộ/tòa nhà/POI chính, ví dụ "Căn hộ 12B, Chung cư Sunrise, 90" hoặc "Trường THPT Chu Văn An".
+Schema: {"recipient_name":string|null,"phone_number":"[PHONE]"|null,"note":string|null,"address_raw":string|null,"address_info":{"address_number":string|null,"street":string|null,"neighborhood":string|null,"municipality":string|null,"sub_region":string|null,"country":"VNM"|null}}
+Quy tắc: phone hợp lệ đã xử lý và được mask thành [PHONE]. Có [PHONE] thì phone_number="[PHONE]", không có thì null.
+address_raw là nguyên văn phần địa chỉ trong input. address_info chỉ mô tả các thành phần thô có trong input, chưa chuẩn hóa địa giới.
+Với địa chỉ mới 2 cấp: neighborhood=null, municipality là xã/phường mới, sub_region là tỉnh/thành mới.
+Với địa chỉ cũ 3 cấp: neighborhood là xã/phường cũ, municipality là quận/huyện/thị xã/tp cấp huyện cũ, sub_region là tỉnh/thành cũ.
+Không tự suy diễn tỉnh chỉ từ quận/huyện, trừ trường hợp input nói rõ. street là đường/ngõ/ngách/hẻm/khu phố/KĐT/chung cư nếu đó là landmark đường đi.
+address_number là số nhà/căn hộ/tòa nhà/POI chính, ví dụ "Căn hộ 12B, Chung cư Sunrise, 90" hoặc "Trường THPT Chu Văn An".
 Không bịa field thiếu.
 """
 
@@ -23,21 +24,37 @@ Không bịa field thiếu.
 _OUTPUT_JSON_SCHEMA = {
     "type": "object",
     "properties": {
-        "name": {"type": ["string", "null"]},
+        "recipient_name": {"type": ["string", "null"]},
+        "phone_number": {"type": ["string", "null"]},
         "note": {"type": ["string", "null"]},
-        "address": {
+        "address_raw": {"type": ["string", "null"]},
+        "address_info": {
             "type": "object",
             "properties": {
-                "province": {"type": ["string", "null"]},
-                "district_hint": {"type": ["string", "null"]},
-                "ward": {"type": ["string", "null"]},
+                "address_number": {"type": ["string", "null"]},
                 "street": {"type": ["string", "null"]},
-                "house_number": {"type": ["string", "null"]},
+                "neighborhood": {"type": ["string", "null"]},
+                "municipality": {"type": ["string", "null"]},
+                "sub_region": {"type": ["string", "null"]},
+                "country": {"type": ["string", "null"]},
             },
-            "required": ["province", "district_hint", "ward", "street", "house_number"],
+            "required": [
+                "address_number",
+                "street",
+                "neighborhood",
+                "municipality",
+                "sub_region",
+                "country",
+            ],
         },
     },
-    "required": ["name", "note", "address"],
+    "required": [
+        "recipient_name",
+        "phone_number",
+        "note",
+        "address_raw",
+        "address_info",
+    ],
 }
 
 
@@ -82,7 +99,29 @@ class LLMClient:
         else:
             raw = self._ollama_chat(text)
         data = _extract_json_object(raw)
-        return ExtractedOrder.model_validate(data), raw
+        return self._to_internal_order(data), raw
+
+    def _to_internal_order(self, data: dict[str, Any]) -> ExtractedOrder:
+        if "recipient_name" not in data and "address_info" not in data:
+            return ExtractedOrder.model_validate(data)
+
+        parsed = LLMExtractedOrder.model_validate(data)
+        info = parsed.address_info
+        return ExtractedOrder(
+            name=parsed.recipient_name,
+            phone=None
+            if parsed.phone_number in {None, "[PHONE]"}
+            else parsed.phone_number,
+            note=parsed.note,
+            address_raw=parsed.address_raw,
+            address=ExtractedAddress(
+                province=info.sub_region,
+                district_hint=info.municipality if info.neighborhood else None,
+                ward=info.neighborhood or info.municipality,
+                street=info.street,
+                house_number=info.address_number,
+            ),
+        )
 
     def _llamacpp_chat(self, text: str) -> str:
         llm = self._get_llm()

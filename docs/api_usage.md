@@ -56,14 +56,18 @@ Response:
 
 ```json
 {
-  "name": "chị Linh",
-  "phone": "0904123604",
+  "recipient_name": "Linh",
+  "phone_number": "0904123604",
   "note": "nhà trong hẻm, tới nơi gọi trước",
-  "address": {
-    "province": "Tỉnh Thái Nguyên",
-    "ward": "Phường Sông Công",
+  "address_raw": "14 đường Cầu Diễn, Phường Cải Đan, Thành phố Sông Công, Thái Nguyên",
+  "address_new": "14 đường Cầu Diễn, Phường Sông Công, Tỉnh Thái Nguyên",
+  "address_info": {
+    "address_number": "14",
     "street": "đường Cầu Diễn",
-    "house_number": "14"
+    "neighborhood": null,
+    "municipality": "Phường Sông Công",
+    "sub_region": "Tỉnh Thái Nguyên",
+    "country": "VNM"
   }
 }
 ```
@@ -72,13 +76,17 @@ Các field output:
 
 | Field | Ý nghĩa |
 |---|---|
-| `name` | Tên/cách gọi khách hàng |
-| `phone` | Số điện thoại đã chuẩn hóa |
+| `recipient_name` | Tên người nhận, đã bỏ cách gọi như `anh`, `chị` |
+| `phone_number` | Số điện thoại đã chuẩn hóa |
 | `note` | Ghi chú giao hàng |
-| `address.province` | Tỉnh/thành phố sau chuẩn hóa |
-| `address.ward` | Xã/phường sau chuẩn hóa |
-| `address.street` | Đường/ngõ/ngách/hẻm nếu có |
-| `address.house_number` | Số nhà nếu có |
+| `address_raw` | Phần địa chỉ trích nguyên văn từ input |
+| `address_new` | Chuỗi địa chỉ cuối sau chuẩn hóa |
+| `address_info.address_number` | Số nhà, căn hộ hoặc POI nếu có |
+| `address_info.street` | Đường/ngõ/ngách/hẻm nếu có |
+| `address_info.neighborhood` | Thường là `null` với địa chỉ mới hai cấp |
+| `address_info.municipality` | Xã/phường mới sau chuẩn hóa |
+| `address_info.sub_region` | Tỉnh/thành phố mới sau chuẩn hóa |
+| `address_info.country` | `VNM` nếu có địa chỉ |
 
 Nếu thiếu field, API trả `null`. Hệ thống không tự bịa thông tin.
 
@@ -94,14 +102,18 @@ Response:
 
 ```json
 {
-  "name": null,
-  "phone": null,
+  "recipient_name": null,
+  "phone_number": null,
   "note": null,
-  "address": {
-    "province": null,
-    "ward": null,
+  "address_raw": null,
+  "address_new": null,
+  "address_info": {
+    "address_number": null,
     "street": null,
-    "house_number": null
+    "neighborhood": null,
+    "municipality": null,
+    "sub_region": null,
+    "country": null
   }
 }
 ```
@@ -150,14 +162,18 @@ Response:
 
 ```json
 {
-  "name": "chị Mai",
-  "phone": "0909123456",
+  "recipient_name": "Mai",
+  "phone_number": "0909123456",
   "note": "gọi trước 10 phút",
-  "address": {
-    "province": "Thủ Đô Hà Nội",
-    "ward": "Phường Ba Đình",
+  "address_raw": "15 ngõ 20 đường Thanh Niên, Phường Ba Đình, Hà Nội",
+  "address_new": "15 ngõ 20 đường Thanh Niên, Phường Ba Đình, Thủ Đô Hà Nội",
+  "address_info": {
+    "address_number": "15",
     "street": "ngõ 20 đường Thanh Niên",
-    "house_number": "15"
+    "neighborhood": null,
+    "municipality": "Phường Ba Đình",
+    "sub_region": "Thủ Đô Hà Nội",
+    "country": "VNM"
   }
 }
 ```
@@ -230,4 +246,3 @@ Response:
   "warnings": []
 }
 ```
-

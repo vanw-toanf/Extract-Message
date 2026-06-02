@@ -89,7 +89,15 @@ def _extract_province(text: str) -> str | None:
         text or "",
         flags=re.IGNORECASE,
     )
-    return match.group(1).strip() if match else None
+    if not match:
+        return None
+    province = re.split(
+        r"\b(?:note|ghi chú|ghi chu)\s*:",
+        match.group(1),
+        maxsplit=1,
+        flags=re.IGNORECASE,
+    )[0]
+    return province.strip(" ,;.")
 
 
 def _extract_house_number(text: str) -> str | None:

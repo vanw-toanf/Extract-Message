@@ -29,6 +29,15 @@ FIELDS = [
     "address.house_number",
 ]
 
+FIELD_ALIASES = {
+    "name": "recipient_name",
+    "phone": "phone_number",
+    "address.province": "address_info.sub_region",
+    "address.ward": "address_info.municipality",
+    "address.street": "address_info.street",
+    "address.house_number": "address_info.address_number",
+}
+
 
 def load_jsonl(path: Path) -> list[dict[str, Any]]:
     with path.open("r", encoding="utf-8") as f:
@@ -36,6 +45,13 @@ def load_jsonl(path: Path) -> list[dict[str, Any]]:
 
 
 def get_path(data: dict[str, Any], path: str) -> Any:
+    value = _get_path(data, path)
+    if value is None and path in FIELD_ALIASES:
+        return _get_path(data, FIELD_ALIASES[path])
+    return value
+
+
+def _get_path(data: dict[str, Any], path: str) -> Any:
     current: Any = data
     for part in path.split("."):
         if not isinstance(current, dict):

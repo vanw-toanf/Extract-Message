@@ -48,7 +48,6 @@ async def ocr_image(file: UploadFile = File(...)) -> OcrResponse:
 @app.post("/parse-image", response_model=ParseResponse)
 async def parse_image(
     file: UploadFile = File(...),
-    use_llm: bool = True,
 ) -> ParseResponse:
     if not file.content_type or not file.content_type.startswith("image/"):
         raise HTTPException(status_code=400, detail="Uploaded file must be an image")
@@ -58,7 +57,7 @@ async def parse_image(
         raise HTTPException(status_code=503, detail=str(exc)) from exc
     except Exception as exc:
         raise HTTPException(status_code=500, detail=f"OCR failed: {exc}") from exc
-    return get_parser().parse(text, use_llm=use_llm)
+    return get_parser().parse(text, use_llm=True)
 
 
 @app.post("/normalize-address", response_model=NormalizedAddress)

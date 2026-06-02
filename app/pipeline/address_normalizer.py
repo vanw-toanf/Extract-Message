@@ -1,4 +1,5 @@
 import json
+from collections import defaultdict
 from pathlib import Path
 from typing import Any
 
@@ -11,12 +12,17 @@ from app.schemas.order import (
     NormalizedAddress,
 )
 
+_HN_HCM_PROVINCE_KEYS: frozenset[str] = frozenset(
+    {normalize_key("Hà Nội"), normalize_key("Hồ Chí Minh")}
+)
+
 
 class AddressNormalizer:
     def __init__(self, db_path: Path, fuzzy_threshold: int = 84):
         self.db_path = db_path
         self.fuzzy_threshold = fuzzy_threshold
         self.records = self._load_records(db_path)
+        self._unique_municipality_map = self._build_unique_municipality_map()
 
     def _load_records(self, db_path: Path) -> list[dict[str, Any]]:
         with db_path.open("r", encoding="utf-8") as f:
@@ -79,6 +85,40 @@ class AddressNormalizer:
                         }
                     )
         return records
+
+    def _build_unique_municipality_map(self) -> dict[str, str]:
+        """Build ward_key/district_key → province_name for names globally unique to HN or HCM."""
+        key_to_all_provinces: defaultdict[str, set[str]] = defaultdict(set)
+        key_to_province_name: dict[str, str] = {}
+
+        for rec in self.records:
+            for key_field in ("ward_key", "district_key"):
+                key = rec[key_field]
+                if not key:
+                    continue
+                key_to_all_provinces[key].add(rec["province_key"])
+                if rec["province_key"] in _HN_HCM_PROVINCE_KEYS:
+                    key_to_province_name.setdefault(key, rec["province_name"])
+
+        return {
+            key: key_to_province_name[key]
+            for key, provinces in key_to_all_provinces.items()
+            if len(provinces) == 1 and key in key_to_province_name
+        }
+
+    def infer_province_from_municipality(self, municipality: str) -> str | None:
+        """Return 'Hà Nội' or 'Hồ Chí Minh' if municipality uniquely identifies one of them."""
+        if not municipality:
+            return None
+        key = normalize_key(municipality)
+        if key in self._unique_municipality_map:
+            return self._unique_municipality_map[key]
+        best_score, best_province = 0.0, None
+        for known_key, province in self._unique_municipality_map.items():
+            score = fuzz.ratio(key, known_key)
+            if score > best_score:
+                best_score, best_province = score, province
+        return best_province if best_score >= 88 else None
 
     def normalize(self, address: ExtractedAddress) -> NormalizedAddress:
         warnings: list[str] = []
