@@ -248,6 +248,12 @@ class OrderParser:
                 parts.append(clean)
         return ", ".join(parts) if parts else None
 
+    _NON_NAME_WORDS: frozenset[str] = frozenset({
+        "nhé", "nha", "nhe", "nhỉ", "nhi", "ạ", "à", "ư", "ừ",
+        "ha", "hả", "ha", "nhờ", "nho", "vậy", "vay", "thôi", "thoi",
+        "được", "duoc", "ok", "oke", "okay", "rồi", "roi", "xong",
+    })
+
     def _strip_recipient_honorific(self, name: str | None) -> str | None:
         if not name:
             return None
@@ -257,4 +263,13 @@ class OrderParser:
             name.strip(),
             flags=re.IGNORECASE,
         )
+        # Strip particles bám vào cuối tên (e.g. "Quỳnh Anh nhé" → "Quỳnh Anh")
+        cleaned = re.sub(
+            r"\s+(?:nhé|nha|nhe|nhỉ|nhi|ạ|à|nhờ|vậy|thôi|được|ok|oke|ha|hả|rồi|xong)$",
+            "",
+            cleaned.strip(),
+            flags=re.IGNORECASE,
+        )
+        if cleaned.lower() in self._NON_NAME_WORDS or len(cleaned) < 2:
+            return None
         return cleaned or None
