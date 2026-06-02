@@ -69,8 +69,12 @@ NOTES = [
     "khách chuyển khoản rồi",
 ]
 
-SELLER_NAMES = ["Lan", "Mai", "Hương", "Trang", "Ngọc", "Linh", "Vy", "Thảo"]
-RECEIVER_NAMES = ["Hùng", "Bình", "Hoa", "Nam", "Quân", "Duyên", "Phúc", "Minh"]
+SELLER_NAMES = ["Lan", "Mai", "Hương", "Trang", "Ngọc", "Linh", "Vy", "Thảo",
+                "Quỳnh", "Hà", "Dung", "Phương"]
+RECEIVER_NAMES = ["Hùng", "Bình", "Hoa", "Nam", "Quân", "Duyên", "Phúc", "Minh",
+                  "Quỳnh Anh", "Minh Tuấn", "Bích Ngọc", "Thanh Hà"]
+PARTICLES = ["nhé", "nha", "nhen", "ạ", "ha"]
+DELIVERY_PREFIXES = ["anh", "chị", "cô", "bạn"]
 
 HONORIFIC_RE = re.compile(
     r"^(?:anh|chị|chi|cô|co|chú|chu|bạn|ban|bé|be|b|c|a)\s+",
@@ -208,28 +212,48 @@ def render_order(
 ) -> str:
     phone_text = phone_variant(phone, index) if phone else None
     prefix = name or ""
-    if index % 6 == 0:
+    style = index % 10
+    if style == 0:
         return f"{prefix} sđt {phone_text or ''} {address_raw}" + (
             f" note: {note}" if note else ""
         )
-    if index % 6 == 1:
+    if style == 1:
         return f"khách {prefix}, phone {phone_text or ''}, cần giao {address_raw}" + (
             f"; ghi chú {note}" if note else ""
         )
-    if index % 6 == 2:
+    if style == 2:
         return f"{prefix}\n{phone_text or ''}\nđịa chỉ: {address_raw}" + (
             f"\n{note}" if note else ""
         )
-    if index % 6 == 3:
+    if style == 3:
         return f"Shop ơi đơn của {prefix}: {phone_text or ''}; gửi tới {address_raw}" + (
             f"; ghi chú: {note}" if note else ""
         )
-    if index % 6 == 4:
+    if style == 4:
         return f"{prefix} đổi địa chỉ nha shop. ĐC mới: {address_raw}. {phone_text or ''}" + (
             f". {note}" if note else ""
         )
-    return f"{prefix} chốt 1 đơn nha\nsđt {phone_text or ''}\nship {address_raw}" + (
-        f"\nnote: {note}" if note else ""
+    if style == 5:
+        return f"{prefix} chốt 1 đơn nha\nsđt {phone_text or ''}\nship {address_raw}" + (
+            f"\nnote: {note}" if note else ""
+        )
+    # --- address-first styles ---
+    if style == 6:
+        return f"giao tới {address_raw}, người nhận: {prefix}, sđt {phone_text or ''}" + (
+            f", ghi chú: {note}" if note else ""
+        )
+    if style == 7:
+        return (
+            f"địa chỉ giao: {address_raw}\nngười nhận: {prefix}\nliên hệ: {phone_text or ''}"
+            + (f"\nnote: {note}" if note else "")
+        )
+    if style == 8:
+        return f"ship {address_raw} | {prefix} | {phone_text or ''}" + (
+            f" | {note}" if note else ""
+        )
+    # style == 9
+    return f"ĐC: {address_raw} - {prefix} - {phone_text or ''}" + (
+        f" - {note}" if note else ""
     )
 
 
@@ -363,7 +387,7 @@ def build_role_confusion_record(index: int, style_index: int | None = None) -> d
     house = f"{index % 900 + 1}/{index % 37 + 1}"
     street = STREETS[index % len(STREETS)].removeprefix("đường ").removeprefix("phố ")
     address_raw = f"{house} ngõ {index % 91 + 1} {street}"
-    style = (style_index if style_index is not None else index) % 8
+    style = (style_index if style_index is not None else index) % 11
 
     if style == 0:
         raw_text = (
@@ -407,12 +431,38 @@ def build_role_confusion_record(index: int, style_index: int | None = None) -> d
             f"địa chỉ nhận {address_raw}"
         )
         name = receiver
-    else:
+    elif style == 7:
         raw_text = (
             f"chị {seller} sale, ship cho cô {receiver} ở {address_raw}, "
             f"liên hệ {phone_text}"
         )
         name = f"cô {receiver}"
+
+    # --- Patterns: sender tells delivery person to deliver to recipient ---
+    elif style == 8:
+        particle = PARTICLES[index % len(PARTICLES)]
+        verb = ["giao", "ship", "đưa"][index % 3]
+        raw_text = (
+            f"{seller} ơi {verb} cho {receiver} {phone_text} tới {address_raw} {particle}"
+        )
+        name = receiver
+
+    elif style == 9:
+        prefix = DELIVERY_PREFIXES[index % len(DELIVERY_PREFIXES)]
+        particle = PARTICLES[(index + 1) % len(PARTICLES)]
+        raw_text = (
+            f"{seller} ơi đến {address_raw} giao cho {prefix} {receiver} {particle}, "
+            f"số khách {phone_text}"
+        )
+        name = f"{prefix} {receiver}"
+
+    else:  # style == 10
+        particle = PARTICLES[(index + 2) % len(PARTICLES)]
+        raw_text = (
+            f"{seller} ơi đi giao hàng cho {receiver} {particle}, "
+            f"giao tới {address_raw}, sdt khách {phone_text}"
+        )
+        name = receiver
 
     note = "tới nơi gọi trước" if style == 5 else None
     return record(
@@ -424,6 +474,76 @@ def build_role_confusion_record(index: int, style_index: int | None = None) -> d
             address_raw=address_raw,
             address_number=house,
             street=f"ngõ {index % 91 + 1} {street}",
+            municipality=None,
+            sub_region=None,
+        ),
+    )
+
+
+OLD_STREETS = [
+    "đường Hai Bà Trưng",
+    "đường Bà Triệu",
+    "đường Kim Mã",
+    "phố Huế",
+    "đường Tôn Đức Thắng",
+    "đường Ngô Gia Tự",
+    "đường Trường Chinh",
+    "phố Vọng",
+]
+
+
+def build_address_correction_record(index: int) -> dict[str, Any]:
+    """Tin nhắn đính chính địa chỉ: nêu cả địa chỉ cũ và địa chỉ mới, model chỉ lấy địa chỉ mới."""
+    name = NAMES[index % len(NAMES)]
+    phone = phone_for(600_000 + index)
+    phone_text = phone_variant(phone, index)
+
+    # Địa chỉ cũ (fake, không cần khớp DB)
+    old_house = str((index * 13 + 7) % 200 + 1)
+    old_street = OLD_STREETS[index % len(OLD_STREETS)]
+    old_address = f"{old_house} {old_street}"
+
+    # Địa chỉ mới (địa chỉ thực sự cần giao)
+    new_house = house_for(index)
+    new_street = street_for(index)
+    address_raw = f"{new_house} {new_street}"
+    style = index % 5
+
+    if style == 0:
+        raw_text = (
+            f"{name} ơi, hồi nãy nhắn nhầm địa chỉ rồi. "
+            f"Đúng ra giao {address_raw} không phải {old_address}, sđt {phone_text}"
+        )
+    elif style == 1:
+        raw_text = (
+            f"{name} đổi lại địa chỉ nha shop, địa chỉ cũ {old_address} "
+            f"giờ giao sang {address_raw} nhé. {phone_text}"
+        )
+    elif style == 2:
+        raw_text = (
+            f"xin lỗi shop nhé, địa chỉ vừa nhắn sai: {old_address}. "
+            f"Đúng là: {address_raw}. {name}, {phone_text}"
+        )
+    elif style == 3:
+        raw_text = (
+            f"{name} {phone_text} đính chính địa chỉ: "
+            f"trước là {old_address}, nay đổi thành {address_raw}"
+        )
+    else:
+        raw_text = (
+            f"cho mình sửa địa chỉ nha, từ {old_address} đổi thành {address_raw}, "
+            f"liên hệ {name} {phone_text}"
+        )
+
+    return record(
+        raw_text,
+        new_response(
+            name=name,
+            has_phone=True,
+            note=None,
+            address_raw=address_raw,
+            address_number=new_house,
+            street=new_street,
             municipality=None,
             sub_region=None,
         ),
@@ -548,6 +668,27 @@ def curated_records() -> list[dict[str, Any]]:
             "anh Nam 0987654321 ship tinh Thai Binh, h. Quynh Phu, x. An Thai, 12 Nguyen Trai",
             new_response("anh Nam", True, None, "tinh Thai Binh, h. Quynh Phu, x. An Thai, 12 Nguyen Trai", "12", "Nguyen Trai", "h. Quynh Phu", "tinh Thai Binh", "x. An Thai"),
         ),
+        # --- sender-tells-delivery patterns ---
+        (
+            "Trang ơi đi giao hàng cho Quỳnh Anh nhé, giao tới 88 Nguyễn Du, Hà Nội, số khách 0901234567",
+            new_response("Quỳnh Anh", True, None, "88 Nguyễn Du, Hà Nội", "88", "Nguyễn Du", None, "Hà Nội"),
+        ),
+        (
+            "Lan ơi ship cho Minh Tuấn 0912345678 tới 22 Lê Lợi, Hoàn Kiếm nha",
+            new_response("Minh Tuấn", True, None, "22 Lê Lợi, Hoàn Kiếm", "22", "Lê Lợi", "Hoàn Kiếm", None),
+        ),
+        (
+            "Hương ơi đến 45 Trần Duy Hưng, Cầu Giấy giao cho chị Phương ạ, số khách 0903444555",
+            new_response("chị Phương", True, None, "45 Trần Duy Hưng, Cầu Giấy", "45", "Trần Duy Hưng", "Cầu Giấy", None),
+        ),
+        (
+            "Ngọc ơi giao cho Bích Ngọc 0977888123 tại số 5 Đinh Tiên Hoàng, Quận 1 nha",
+            new_response("Bích Ngọc", True, None, "số 5 Đinh Tiên Hoàng, Quận 1", "5", "Đinh Tiên Hoàng", "Quận 1", None),
+        ),
+        (
+            "Vy ơi ship giúp cho anh Hùng ở 12/3 Cách Mạng Tháng 8, Quận 3 nhé, liên hệ 0908999111",
+            new_response("anh Hùng", True, None, "12/3 Cách Mạng Tháng 8, Quận 3", "12/3", "Cách Mạng Tháng 8", "Quận 3", None),
+        ),
     ]
     return [record(text, response) for text, response in rows]
 
@@ -566,6 +707,9 @@ def generate_records(
             records.append(
                 build_role_confusion_record(start_index + offset, offset // 10)
             )
+            continue
+        if offset % 20 == 5:   # 5%, không trùng với role_confusion (offset%10==0)
+            records.append(build_address_correction_record(start_index + offset))
             continue
         is_old = offset < old_count
         pool = old_entries if is_old else new_entries
@@ -589,7 +733,8 @@ def dataset_profile(records: list[dict[str, Any]]) -> dict[str, int]:
 
     role_pattern = (
         r"(ơi ship cho mình|ơi em chốt|shop .+ gửi giúp|nhân viên chốt đơn|"
-        r"liên hệ shop|ơi giao hộ|người gửi|sale, ship cho)"
+        r"liên hệ shop|ơi giao hộ|người gửi|sale, ship cho|"
+        r"ơi giao cho|ơi ship cho|ơi đi giao|ơi đến .+ giao)"
     )
     role_records = [
         row

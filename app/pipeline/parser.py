@@ -73,6 +73,13 @@ class OrderParser:
             or extracted.address.district_hint
         )
         sub_region = normalized_address.province or extracted.address.province
+        # Model đôi khi nhầm tên quận/phường vào sub_region (vd: "Thủ Đức" thay vì municipality).
+        # Nếu sub_region tra được trong unique map và kết quả khác với chính nó → đó là municipality.
+        if sub_region and not municipality:
+            inferred = self.address_normalizer.infer_province_from_municipality(sub_region)
+            if inferred and inferred.lower() != sub_region.lower():
+                municipality = sub_region
+                sub_region = inferred
         if not sub_region and municipality:
             sub_region = self.address_normalizer.infer_province_from_municipality(municipality)
         address_new = self._format_address(
