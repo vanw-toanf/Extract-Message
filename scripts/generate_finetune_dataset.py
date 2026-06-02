@@ -41,6 +41,29 @@ NAMES = [
     "bạn Minh",
 ]
 
+FULL_NAMES = [
+    "Nguyễn Thị Hoa",
+    "Trần Văn Bình",
+    "Lê Thị Mai",
+    "Phạm Văn Nam",
+    "Hoàng Thị Lan",
+    "Vũ Văn Hùng",
+    "Đặng Thị Ngọc",
+    "Bùi Văn Tuấn",
+    "Ngô Thị Hương",
+    "Đỗ Văn Khoa",
+    "Trần Bích Ngọc",
+    "Lê Văn Đức",
+    "Nguyễn Minh Quân",
+    "Phạm Thị Duyên",
+    "Hoàng Văn Phúc",
+    "Vũ Thị Thảo",
+    "anh Nguyễn Văn Tùng",
+    "chị Trần Thị Hà",
+    "cô Lê Thị Phương",
+    "anh Phạm Minh Đức",
+]
+
 STREETS = [
     "đường Nguyễn Văn Cừ",
     "đường Lê Lợi",
@@ -86,8 +109,8 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--db", type=Path, default=DEFAULT_DB)
     parser.add_argument("--output-dir", type=Path, default=DEFAULT_OUTPUT_DIR)
-    parser.add_argument("--train-size", type=int, default=2400)
-    parser.add_argument("--valid-size", type=int, default=300)
+    parser.add_argument("--train-size", type=int, default=10000)
+    parser.add_argument("--valid-size", type=int, default=2500)
     parser.add_argument("--seed", type=int, default=20260601)
     return parser.parse_args()
 
@@ -287,7 +310,8 @@ def load_db_entries(db_path: Path) -> tuple[list[dict[str, str]], list[dict[str,
 
 
 def build_generated_record(entry: dict[str, str], index: int, is_old: bool) -> dict[str, Any]:
-    name = NAMES[index % len(NAMES)]
+    # Mỗi 4 record dùng 1 full name thay vì honorific+tên đơn (~25%)
+    name = FULL_NAMES[(index // 4) % len(FULL_NAMES)] if index % 4 == 3 else NAMES[index % len(NAMES)]
     phone = phone_for(index)
     note = NOTES[index % len(NOTES)]
     house = house_for(index)
@@ -387,7 +411,7 @@ def build_role_confusion_record(index: int, style_index: int | None = None) -> d
     house = f"{index % 900 + 1}/{index % 37 + 1}"
     street = STREETS[index % len(STREETS)].removeprefix("đường ").removeprefix("phố ")
     address_raw = f"{house} ngõ {index % 91 + 1} {street}"
-    style = (style_index if style_index is not None else index) % 11
+    style = (style_index if style_index is not None else index) % 13
 
     if style == 0:
         raw_text = (
@@ -456,13 +480,32 @@ def build_role_confusion_record(index: int, style_index: int | None = None) -> d
         )
         name = f"{prefix} {receiver}"
 
-    else:  # style == 10
+    elif style == 10:
         particle = PARTICLES[(index + 2) % len(PARTICLES)]
         raw_text = (
             f"{seller} ơi đi giao hàng cho {receiver} {particle}, "
             f"giao tới {address_raw}, sdt khách {phone_text}"
         )
         name = receiver
+
+    # Seller có honorific prefix, người nói là người nhận (recipient_name = null)
+    elif style == 11:
+        hon = ["anh", "chị", "cô"][index % 3]
+        verb = ["giao cho mình", "ship cho mình", "giao hộ mình"][index % 3]
+        particle = PARTICLES[index % len(PARTICLES)]
+        raw_text = (
+            f"{hon} {seller} ơi {verb} {particle}, "
+            f"mình đang ở {address_raw}, phone mình {phone_text}"
+        )
+        name = None
+
+    else:  # style == 12
+        hon = ["anh", "chị", "bạn"][index % 3]
+        verb = ["giao cho mình nha", "ship cho mình đi", "giao hộ mình với"][index % 3]
+        raw_text = (
+            f"{hon} {seller} ơi {verb}, đang ở {address_raw}"
+        )
+        name = None
 
     note = "tới nơi gọi trước" if style == 5 else None
     return record(
@@ -688,6 +731,23 @@ def curated_records() -> list[dict[str, Any]]:
         (
             "Vy ơi ship giúp cho anh Hùng ở 12/3 Cách Mạng Tháng 8, Quận 3 nhé, liên hệ 0908999111",
             new_response("anh Hùng", True, None, "12/3 Cách Mạng Tháng 8, Quận 3", "12/3", "Cách Mạng Tháng 8", "Quận 3", None),
+        ),
+        # Seller có honorific, người nói là người nhận → recipient_name = null
+        (
+            "chị Mai ơi giao cho mình nha, đang ở 88 Nguyễn Du",
+            new_response(None, False, None, "88 Nguyễn Du", "88", "Nguyễn Du", None, None),
+        ),
+        (
+            "anh Hùng ơi ship cho mình cái này với, mình ở 45 Lê Lợi, Hoàn Kiếm, phone 0901234567",
+            new_response(None, True, None, "45 Lê Lợi, Hoàn Kiếm", "45", "Lê Lợi", "Hoàn Kiếm", None),
+        ),
+        (
+            "chị Lan ơi giao hộ mình nha, địa chỉ 22 Trần Phú, Hà Đông, sđt 0912345678",
+            new_response(None, True, None, "22 Trần Phú, Hà Đông", "22", "Trần Phú", "Hà Đông", None),
+        ),
+        (
+            "bạn Ngọc ơi ship cho mình đi, mình đang ở số 5 Đinh Tiên Hoàng",
+            new_response(None, False, None, "số 5 Đinh Tiên Hoàng", "5", "Đinh Tiên Hoàng", None, None),
         ),
     ]
     return [record(text, response) for text, response in rows]
