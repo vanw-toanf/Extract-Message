@@ -90,6 +90,10 @@ NOTES = [
     "nhà trong hẻm, tới nơi gọi trước",
     "để hàng ở bảo vệ nếu không nghe máy",
     "khách chuyển khoản rồi",
+    "giao buổi sáng",
+    "giao trước 5h chiều",
+    "giao sau 7h tối",
+    "giao buổi tối sau 8h",
 ]
 
 SELLER_NAMES = ["Lan", "Mai", "Hương", "Trang", "Ngọc", "Linh", "Vy", "Thảo",
@@ -235,7 +239,7 @@ def render_order(
 ) -> str:
     phone_text = phone_variant(phone, index) if phone else None
     prefix = name or ""
-    style = index % 10
+    style = index % 13
     if style == 0:
         return f"{prefix} sđt {phone_text or ''} {address_raw}" + (
             f" note: {note}" if note else ""
@@ -274,8 +278,19 @@ def render_order(
         return f"ship {address_raw} | {prefix} | {phone_text or ''}" + (
             f" | {note}" if note else ""
         )
-    # style == 9
-    return f"ĐC: {address_raw} - {prefix} - {phone_text or ''}" + (
+    if style == 9:
+        return f"ĐC: {address_raw} - {prefix} - {phone_text or ''}" + (
+            f" - {note}" if note else ""
+        )
+    # --- Formal label styles ---
+    if style == 10:
+        parts = f"Tên: {prefix} | ĐT: {phone_text or 'không có'} | Địa chỉ: {address_raw}"
+        return parts + (f" | Ghi chú: {note}" if note else "")
+    if style == 11:
+        parts = f"Họ tên: {prefix}\nSĐT: {phone_text or 'không có'}\nĐịa chỉ: {address_raw}"
+        return parts + (f"\nGhi chú: {note}" if note else "")
+    # style == 12: phone-first
+    return f"{phone_text or ''} - {prefix} - {address_raw}" + (
         f" - {note}" if note else ""
     )
 
@@ -387,6 +402,9 @@ def build_generated_record(entry: dict[str, str], index: int, is_old: bool) -> d
         )
 
     raw_text = render_order(index, name, phone, address_raw, note)
+    # ~5% record dạng ALL CAPS (accentless)
+    if index % 20 == 14:
+        raw_text = strip_accents(raw_text).upper()
     return record(
         raw_text,
         new_response(
@@ -819,6 +837,13 @@ def dataset_profile(records: list[dict[str, Any]]) -> dict[str, int]:
             == row["response"]["address_raw"]
             for row in records
         ),
+        "all_caps_records": sum(
+            row["input_masked"] == row["input_masked"].upper()
+            for row in records
+        ),
+        "formal_label_records": input_count(r"(Tên:|Họ tên:|ĐT:|SĐT:)\s"),
+        "phone_first_records": input_count(r"^\[PHONE\]"),
+        "time_specific_note_records": input_count(r"giao buổi|giao trước|giao sau|giao tối"),
         "reverse_order_records": sum(
             bool(
                 re.match(
