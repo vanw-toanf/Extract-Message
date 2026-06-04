@@ -34,6 +34,8 @@ class Settings(BaseModel):
         "yes",
     }
     fuzzy_threshold: int = int(os.getenv("FUZZY_THRESHOLD", "84"))
+    llm_max_concurrent: int = int(os.getenv("LLM_MAX_CONCURRENT", "3"))
+    llm_queue_timeout: float = float(os.getenv("LLM_QUEUE_TIMEOUT_SECONDS", "15"))
 
 
 @lru_cache

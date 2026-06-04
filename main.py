@@ -1,3 +1,4 @@
+import threading
 from functools import lru_cache
 
 from fastapi import FastAPI, File, HTTPException, UploadFile
@@ -16,6 +17,8 @@ from app.schemas.order import (
 
 app = FastAPI(title="Clipboard Parsing & Smart Order API")
 
+_llm_semaphore = threading.Semaphore(int(get_settings().llm_max_concurrent))
+
 
 @lru_cache
 def get_parser() -> OrderParser:
@@ -27,9 +30,19 @@ def health() -> dict[str, str]:
     return {"status": "ok"}
 
 
+def _parse_with_llm(text: str) -> ParseResponse:
+    acquired = _llm_semaphore.acquire(timeout=get_settings().llm_queue_timeout)
+    if not acquired:
+        raise HTTPException(status_code=429, detail="Server busy, please retry later")
+    try:
+        return get_parser().parse(text, use_llm=True)
+    finally:
+        _llm_semaphore.release()
+
+
 @app.post("/parse-text", response_model=ParseResponse)
 def parse_text(request: ParseRequest) -> ParseResponse:
-    return get_parser().parse(request.text, use_llm=True)
+    return _parse_with_llm(request.text)
 
 
 @app.post("/ocr-image", response_model=OcrResponse)
@@ -57,7 +70,7 @@ async def parse_image(
         raise HTTPException(status_code=503, detail=str(exc)) from exc
     except Exception as exc:
         raise HTTPException(status_code=500, detail=f"OCR failed: {exc}") from exc
-    return get_parser().parse(text, use_llm=True)
+    return _parse_with_llm(text)
 
 
 @app.post("/normalize-address", response_model=NormalizedAddress)
