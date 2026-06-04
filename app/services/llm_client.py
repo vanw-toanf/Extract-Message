@@ -173,7 +173,6 @@ class LLMClient:
             "model": self.settings.llm_model,
             "temperature": 0,
             "max_tokens": self.settings.llm_max_tokens,
-            "response_format": {"type": "json_object"},
             "messages": [
                 {"role": "system", "content": SYSTEM_PROMPT},
                 {"role": "user", "content": text},
