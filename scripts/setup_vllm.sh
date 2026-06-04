@@ -37,6 +37,7 @@ ExecStart=${VENV_PYTHON} -m vllm.entrypoints.openai.api_server \\
 Restart=on-failure
 RestartSec=10
 Environment="CUDA_VISIBLE_DEVICES=0"
+Environment="VLLM_USE_FLASHINFER_SAMPLER=0"
 
 [Install]
 WantedBy=multi-user.target
