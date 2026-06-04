@@ -145,6 +145,7 @@ class LLMClient:
             "model": self.settings.llm_model,
             "stream": False,
             "keep_alive": self.settings.llm_keep_alive,
+            "format": "json",
             "options": {
                 "temperature": 0,
                 "num_predict": self.settings.llm_max_tokens,
