@@ -1,9 +1,12 @@
 .git
+.venv
+venv
 __pycache__
 *.pyc
 .pytest_cache
 .env
 benchmark_results
+data/finetune
 *.log
 # model files - mount as volume instead
 models/
