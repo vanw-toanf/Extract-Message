@@ -37,7 +37,9 @@ ExecStart=${VENV_PYTHON} -m vllm.entrypoints.openai.api_server \\
 Restart=on-failure
 RestartSec=10
 Environment="CUDA_VISIBLE_DEVICES=0"
+Environment="PATH=/home/vanwtoanf/Extract-Message/.venv/bin:/usr/local/cuda/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
 Environment="VLLM_USE_FLASHINFER_SAMPLER=0"
+Environment="VLLM_ATTENTION_BACKEND=TRITON"
 
 [Install]
 WantedBy=multi-user.target
