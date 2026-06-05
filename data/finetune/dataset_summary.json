@@ -1,0 +1,52 @@
+{
+  "train_records": 9551,
+  "valid_records": 2500,
+  "curated_valid_records": 38,
+  "old_db_entries": 10097,
+  "new_db_entries": 3321,
+  "schema": {
+    "address_raw": "original address fragment from input",
+    "old_address": "neighborhood=old ward, municipality=old district, sub_region=old province",
+    "new_address": "neighborhood=null, municipality=new ward, sub_region=new province"
+  },
+  "train_profile": {
+    "records": 9551,
+    "masked_phone_records": 9475,
+    "x_dot_or_space_inputs": 2286,
+    "h_dot_or_space_inputs": 2072,
+    "p_dot_or_space_inputs": 582,
+    "q_dot_or_space_inputs": 132,
+    "neighborhood_null": 3951,
+    "municipality_null": 1551,
+    "sub_region_null": 2176,
+    "street_null": 500,
+    "accentless_address_records": 500,
+    "all_caps_records": 500,
+    "formal_label_records": 1231,
+    "phone_first_records": 653,
+    "time_specific_note_records": 2832,
+    "reverse_order_records": 997,
+    "role_confusion_records": 974,
+    "role_confusion_recipient_null": 384
+  },
+  "valid_profile": {
+    "records": 2500,
+    "masked_phone_records": 2475,
+    "x_dot_or_space_inputs": 562,
+    "h_dot_or_space_inputs": 506,
+    "p_dot_or_space_inputs": 150,
+    "q_dot_or_space_inputs": 35,
+    "neighborhood_null": 1115,
+    "municipality_null": 505,
+    "sub_region_null": 669,
+    "street_null": 129,
+    "accentless_address_records": 125,
+    "all_caps_records": 124,
+    "formal_label_records": 304,
+    "phone_first_records": 163,
+    "time_specific_note_records": 699,
+    "reverse_order_records": 246,
+    "role_confusion_records": 250,
+    "role_confusion_recipient_null": 100
+  }
+}

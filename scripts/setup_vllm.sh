@@ -55,7 +55,8 @@ exec $VENV_PYTHON \\
     --max-num-seqs 20 \\
     --gpu-memory-utilization 0.85 \\
     --swap-space 0 \\
-    --enforce-eager \\
+    --no-enable-chunked-prefill \\
+    --block-size 32 \\
     --host 0.0.0.0 \\
     --port 8001 \\
     --served-model-name vin-extractor
