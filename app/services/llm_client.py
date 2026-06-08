@@ -1,189 +1,288 @@
-import json
+"""OpenAI LLM client: async, structured outputs, circuit breaker, exponential backoff."""
+import asyncio
+import random
 import re
+import time
+from enum import Enum
 from typing import Any
 
-import requests
+import openai
+from openai import AsyncOpenAI
 
 from app.core_config import Settings
-from app.schemas.order import ExtractedAddress, ExtractedOrder, LLMExtractedOrder
+from app.schemas.order import (
+    ExtractedAddress,
+    ExtractedOrder,
+    LLMOrderStrict,
+)
 
+# ── tunables ──────────────────────────────────────────────────────────────────
+MAX_INPUT_LENGTH = 500       # chars; requests beyond this are rejected
+MAX_RETRIES = 3              # attempts after initial failure
+BASE_RETRY_DELAY = 1.0       # seconds; actual delay = BASE * 2^attempt + jitter
+CIRCUIT_FAILURE_THRESHOLD = 5
+CIRCUIT_RECOVERY_TIMEOUT = 30.0  # seconds before OPEN → HALF_OPEN probe
 
-SYSTEM_PROMPT = """Trích xuất đơn giao hàng Việt Nam. Chỉ trả JSON hợp lệ, không giải thích.
-Không bịa. Thiếu/không chắc thì null. Không phải đơn hàng thì tất cả null.
-Schema: {"recipient_name":string|null,"phone_number":"[PHONE]"|null,"note":string|null,"address_raw":string|null,"address_info":{"address_number":string|null,"street":string|null,"neighborhood":string|null,"municipality":string|null,"sub_region":string|null,"country":"VNM"|null}}
-Quy tắc: phone hợp lệ đã xử lý và được mask thành [PHONE]. Có [PHONE] thì phone_number="[PHONE]", không có thì null.
-address_raw là nguyên văn phần địa chỉ trong input. address_info chỉ mô tả các thành phần thô có trong input, chưa chuẩn hóa địa giới.
-Với địa chỉ mới 2 cấp: neighborhood=null, municipality là xã/phường mới, sub_region là tỉnh/thành mới.
-Với địa chỉ cũ 3 cấp: neighborhood là xã/phường cũ, municipality là quận/huyện/thị xã/tp cấp huyện cũ, sub_region là tỉnh/thành cũ.
-Không tự suy diễn tỉnh chỉ từ quận/huyện, trừ trường hợp input nói rõ. street là đường/ngõ/ngách/hẻm/khu phố/KĐT/chung cư nếu đó là landmark đường đi.
-address_number là số nhà/căn hộ/tòa nhà/POI chính, ví dụ "Căn hộ 12B, Chung cư Sunrise, 90" hoặc "Trường THPT Chu Văn An".
-Không bịa field thiếu.
-"""
+# Errors worth retrying (transient network / server-side)
+_RETRYABLE = (
+    openai.RateLimitError,
+    openai.APITimeoutError,
+    openai.APIConnectionError,
+    openai.InternalServerError,  # covers HTTP 500 and 503
+)
 
-# JSON schema dùng cho grammar-constrained generation (llamacpp)
-_OUTPUT_JSON_SCHEMA = {
-    "type": "object",
-    "properties": {
-        "recipient_name": {"type": ["string", "null"]},
-        "phone_number": {"type": ["string", "null"]},
-        "note": {"type": ["string", "null"]},
-        "address_raw": {"type": ["string", "null"]},
-        "address_info": {
-            "type": "object",
-            "properties": {
-                "address_number": {"type": ["string", "null"]},
-                "street": {"type": ["string", "null"]},
-                "neighborhood": {"type": ["string", "null"]},
-                "municipality": {"type": ["string", "null"]},
-                "sub_region": {"type": ["string", "null"]},
-                "country": {"type": ["string", "null"]},
-            },
-            "required": [
-                "address_number",
-                "street",
-                "neighborhood",
-                "municipality",
-                "sub_region",
-                "country",
-            ],
-        },
-    },
-    "required": [
-        "recipient_name",
-        "phone_number",
-        "note",
-        "address_raw",
-        "address_info",
-    ],
+# ── System Prompt (static → OpenAI auto-caches when > 1024 tokens) ────────────
+SYSTEM_PROMPT = """Bạn là engine trích xuất thông tin đơn giao hàng Việt Nam. Luôn trả về JSON đúng schema, không giải thích.
+
+=== SCHEMA ===
+{
+  "short_reasoning": string | null,
+  "recipient_name": string | null,
+  "phone_number": "[PHONE]" | null,
+  "note": string | null,
+  "address_raw": string | null,
+  "address_info": {
+    "address_number": string | null,
+    "street": string | null,
+    "neighborhood": string | null,
+    "municipality": string | null,
+    "sub_region": string | null,
+    "country": "VNM" | null
+  }
 }
 
+=== LUẬT BẮT BUỘC ===
 
-def _extract_json_object(text: str) -> dict[str, Any]:
-    try:
-        return json.loads(text)
-    except json.JSONDecodeError:
-        pass
+[R1] Không bịa dữ liệu. Thiếu thông tin hoặc không chắc → null.
+[R2] Input không phải đơn hàng (không có địa chỉ/người nhận) → tất cả trường null.
+[R3] phone_number: Số điện thoại đã được xử lý và thay bằng token [PHONE] trong input. Nếu có [PHONE] → phone_number = "[PHONE]". Không có → null.
+[R4] address_raw: Copy nguyên văn phần địa chỉ từ input, không chỉnh sửa.
+[R5] address_info: Phân tách địa chỉ thô, chưa chuẩn hóa.
+  - Địa chỉ 2 cấp mới (sau sáp nhập 2025): neighborhood = null, municipality = xã/phường/thị trấn mới, sub_region = tỉnh/thành phố mới.
+  - Địa chỉ 3 cấp cũ: neighborhood = xã/phường cũ, municipality = quận/huyện/thị xã/TP cấp huyện cũ, sub_region = tỉnh/thành cũ.
+  - street: đường/ngõ/ngách/hẻm/khu phố/KĐT/chung cư là landmark đường đi.
+  - address_number: số nhà/căn hộ/tòa nhà/POI chính.
+  - Không tự suy diễn tỉnh/thành chỉ từ quận/huyện trừ khi input nói rõ.
+  - country: "VNM" nếu có địa chỉ, null nếu không có địa chỉ.
 
-    match = re.search(r"\{.*\}", text or "", flags=re.S)
-    if not match:
-        raise ValueError("LLM response does not contain a JSON object")
-    return json.loads(match.group(0))
+[R6] NHẬN DIỆN NGƯỜI NHẬN (quan trọng nhất):
+  - Người nhận là người sẽ NHẬN hàng tại địa chỉ giao, không phải người nhắn tin, người gọi, shop, hay courier.
+  - "giao cho [Tên]", "ship tới [Tên]" → [Tên] là người nhận.
+  - "[Tên] ơi", "anh/chị [Tên] ơi", "shop [Tên] ơi" → [Tên] là người được gọi (shop/courier), KHÔNG phải người nhận → recipient_name = null nếu không có tên khác.
+  - "chị/anh [A] lấy đơn/lấy hàng để giao cho anh/em/chị [B]" → [B] là người nhận, [A] là courier.
+  - "[A] ơi giao cho mình nha", "mình/tôi/em ở [địa chỉ]" → người viết là người nhận, name = null (không biết tên).
 
+[R7] ĐỊA CHỈ KHI CÓ NHIỀU ĐỊA CHỈ:
+  - "lấy hàng ở A, giao tới B" → address là B (địa chỉ giao đến, destination).
+  - "đổi địa chỉ thành B" / "không giao ở A nữa, giao ở B" → address là B (địa chỉ mới).
+  - "lấy tại A" mà không có địa chỉ giao → address_raw = null.
+
+[R8] note: Ghi chú giao hàng như "giao buổi sáng", "gọi trước 30p", "để ở cổng", "hàng dễ vỡ". Không bao gồm địa chỉ hay tên vào note.
+
+[R9] short_reasoning: Tối đa 15 từ. Quy tắc:
+  - Đơn giản (1 người, 1 địa chỉ, rõ ràng) → bắt buộc trả về null.
+  - Phức tạp (có 2 người cần phân biệt, đổi địa chỉ, ambiguous) → ghi lý do ngắn gọn.
+
+=== VÍ DỤ (FEW-SHOT) ===
+
+[Đơn đơn giản → short_reasoning: null]
+User: Trần Bích Ngọc, [PHONE], Căn hộ 12B, Chung cư Sunrise, 90 Võ Văn Ngân, Thủ Đức, gọi trước 30p
+Assistant: {"short_reasoning":null,"recipient_name":"Trần Bích Ngọc","phone_number":"[PHONE]","note":"gọi trước 30p","address_raw":"Căn hộ 12B, Chung cư Sunrise, 90 Võ Văn Ngân, Thủ Đức","address_info":{"address_number":"Căn hộ 12B, Chung cư Sunrise, 90","street":"Võ Văn Ngân","neighborhood":null,"municipality":"Thủ Đức","sub_region":null,"country":"VNM"}}
+
+[Hai người: A lấy đơn giao cho B → B là người nhận]
+User: chị Lan lấy đơn giao cho anh Minh nhé, [PHONE], 22 Ngô Quyền, Hoàn Kiếm, Hà Nội
+Assistant: {"short_reasoning":"Lan giao, Minh nhận","recipient_name":"Minh","phone_number":"[PHONE]","note":null,"address_raw":"22 Ngô Quyền, Hoàn Kiếm, Hà Nội","address_info":{"address_number":"22","street":"Ngô Quyền","neighborhood":null,"municipality":"Hoàn Kiếm","sub_region":"Hà Nội","country":"VNM"}}
+
+[Gọi tên shop/courier bằng "[Tên] ơi" → tên đó không phải người nhận]
+User: chị Mai ơi giao cho mình nha, mình đang ở 88 Nguyễn Du Q1, [PHONE]
+Assistant: {"short_reasoning":"Mai là courier, mình là người nhận","recipient_name":null,"phone_number":"[PHONE]","note":null,"address_raw":"88 Nguyễn Du Q1","address_info":{"address_number":"88","street":"Nguyễn Du","neighborhood":null,"municipality":"Quận 1","sub_region":null,"country":"VNM"}}
+
+[Đổi địa chỉ giao → chỉ lấy địa chỉ mới]
+User: anh ơi đổi địa chỉ giao nhé, không giao ở 12 Lý Thái Tổ nữa, giao tới 88 Nguyễn Du, Hoàn Kiếm, Hà Nội thôi, [PHONE]
+Assistant: {"short_reasoning":"địa chỉ mới: 88 Nguyễn Du","recipient_name":null,"phone_number":"[PHONE]","note":null,"address_raw":"88 Nguyễn Du, Hoàn Kiếm, Hà Nội","address_info":{"address_number":"88","street":"Nguyễn Du","neighborhood":null,"municipality":"Hoàn Kiếm","sub_region":"Hà Nội","country":"VNM"}}
+"""
+
+
+# ── Circuit Breaker ────────────────────────────────────────────────────────────
+
+class CircuitBreakerOpenError(RuntimeError):
+    """Raised when the circuit is OPEN and requests are blocked."""
+
+
+class _CBState(Enum):
+    CLOSED = "closed"
+    OPEN = "open"
+    HALF_OPEN = "half_open"
+
+
+class _CircuitBreaker:
+    def __init__(self, failure_threshold: int, recovery_timeout: float) -> None:
+        self._state = _CBState.CLOSED
+        self._failures = 0
+        self._last_failure_at: float | None = None
+        self._threshold = failure_threshold
+        self._recovery_timeout = recovery_timeout
+        self._lock = asyncio.Lock()
+
+    def _effective_state(self) -> _CBState:
+        """Transition OPEN → HALF_OPEN if recovery window has passed."""
+        if (
+            self._state == _CBState.OPEN
+            and self._last_failure_at is not None
+            and time.monotonic() - self._last_failure_at >= self._recovery_timeout
+        ):
+            self._state = _CBState.HALF_OPEN
+        return self._state
+
+    async def call(self, coro: Any) -> Any:
+        async with self._lock:
+            if self._effective_state() == _CBState.OPEN:
+                raise CircuitBreakerOpenError(
+                    "LLM circuit breaker OPEN – service unavailable"
+                )
+
+        try:
+            result = await coro
+        except Exception:
+            async with self._lock:
+                self._failures += 1
+                self._last_failure_at = time.monotonic()
+                if self._failures >= self._threshold:
+                    self._state = _CBState.OPEN
+            raise
+        else:
+            async with self._lock:
+                self._failures = 0
+                self._state = _CBState.CLOSED
+            return result
+
+
+# ── LLM Client ────────────────────────────────────────────────────────────────
 
 class LLMClient:
-    def __init__(self, settings: Settings):
-        self.settings = settings
-        self._llm: Any = None
-        # Eager load ở startup để request đầu không bị chậm
-        if settings.llm_provider == "llamacpp":
-            self._get_llm()
-
-    def _get_llm(self) -> Any:
-        if self._llm is None:
-            from llama_cpp import Llama  # type: ignore[import]
-
-            self._llm = Llama(
-                model_path=str(self.settings.llm_model_path),
-                n_ctx=self.settings.llm_num_ctx,
-                n_threads=self.settings.llm_threads,
-                n_gpu_layers=0,  # CPU only
-                verbose=False,
-            )
-        return self._llm
-
-    def extract_order(self, text: str) -> tuple[ExtractedOrder, Any]:
-        if self.settings.llm_provider == "llamacpp":
-            raw = self._llamacpp_chat(text)
-        elif self.settings.llm_provider == "openai_compatible":
-            raw = self._openai_compatible_chat(text)
-        else:
-            raw = self._ollama_chat(text)
-        data = _extract_json_object(raw)
-        return self._to_internal_order(data), raw
-
-    def _to_internal_order(self, data: dict[str, Any]) -> ExtractedOrder:
-        if "recipient_name" not in data and "address_info" not in data:
-            return ExtractedOrder.model_validate(data)
-
-        parsed = LLMExtractedOrder.model_validate(data)
-        info = parsed.address_info
-        return ExtractedOrder(
-            name=parsed.recipient_name,
-            phone=None
-            if parsed.phone_number in {None, "[PHONE]"}
-            else parsed.phone_number,
-            note=parsed.note,
-            address_raw=parsed.address_raw,
-            address=ExtractedAddress(
-                province=info.sub_region,
-                district_hint=info.municipality if info.neighborhood else None,
-                ward=info.neighborhood or info.municipality,
-                street=info.street,
-                house_number=info.address_number,
-            ),
+    def __init__(self, settings: Settings) -> None:
+        self._client = AsyncOpenAI(
+            api_key=settings.openai_api_key,
+            timeout=settings.llm_timeout_seconds,
+        )
+        self._model = settings.llm_model
+        self._max_tokens = settings.llm_max_tokens
+        self._circuit = _CircuitBreaker(
+            failure_threshold=CIRCUIT_FAILURE_THRESHOLD,
+            recovery_timeout=CIRCUIT_RECOVERY_TIMEOUT,
         )
 
-    def _llamacpp_chat(self, text: str) -> str:
-        llm = self._get_llm()
-        response = llm.create_chat_completion(
+    async def extract_order(self, text: str) -> tuple[ExtractedOrder, LLMOrderStrict]:
+        """
+        Input guardrail → circuit breaker → retry with exponential backoff →
+        structured output → post-process guardrail → internal model.
+        """
+        if len(text) > MAX_INPUT_LENGTH:
+            raise ValueError(
+                f"Input too long: {len(text)} chars (max {MAX_INPUT_LENGTH})"
+            )
+
+        data: LLMOrderStrict = await self._circuit.call(self._with_retry(text))
+        self._post_process(data)
+        return self._to_internal(data), data
+
+    # ── retry layer ──────────────────────────────────────────────────────────
+
+    async def _with_retry(self, text: str) -> LLMOrderStrict:
+        """Exponential backoff with full jitter on transient errors."""
+        last_exc: Exception | None = None
+        for attempt in range(MAX_RETRIES + 1):
+            try:
+                return await self._single_call(text)
+            except _RETRYABLE as exc:
+                last_exc = exc
+                if attempt >= MAX_RETRIES:
+                    break
+                # delay = BASE * 2^attempt + uniform(0, 1)
+                # e.g. attempt 0 → ~1.3s, attempt 1 → ~2.25s, attempt 2 → ~4.7s
+                delay = BASE_RETRY_DELAY * (2 ** attempt) + random.uniform(0, 1)
+                await asyncio.sleep(delay)
+        assert last_exc is not None
+        raise last_exc
+
+    # ── single API call ──────────────────────────────────────────────────────
+
+    async def _single_call(self, text: str) -> LLMOrderStrict:
+        response = await self._client.beta.chat.completions.parse(
+            model=self._model,
+            temperature=0,
+            max_tokens=self._max_tokens,
             messages=[
                 {"role": "system", "content": SYSTEM_PROMPT},
                 {"role": "user", "content": text},
             ],
-            temperature=0,
-            max_tokens=self.settings.llm_max_tokens,
-            response_format={
-                "type": "json_object",
-                "schema": _OUTPUT_JSON_SCHEMA,
-            },
+            response_format=LLMOrderStrict,
         )
-        return response["choices"][0]["message"]["content"]
+        parsed = response.choices[0].message.parsed
+        if parsed is None:
+            raise ValueError(
+                "OpenAI returned null parsed result (model refused or schema mismatch)"
+            )
+        return parsed
 
-    def _ollama_chat(self, text: str) -> str:
-        url = self.settings.llm_base_url.rstrip("/") + "/api/chat"
-        payload = {
-            "model": self.settings.llm_model,
-            "stream": False,
-            "keep_alive": self.settings.llm_keep_alive,
-            "format": "json",
-            "options": {
-                "temperature": 0,
-                "num_predict": self.settings.llm_max_tokens,
-                "num_ctx": self.settings.llm_num_ctx,
-            },
-            "messages": [
-                {"role": "system", "content": SYSTEM_PROMPT},
-                {"role": "user", "content": text},
-            ],
-        }
-        response = requests.post(
-            url, json=payload, timeout=self.settings.llm_timeout_seconds
-        )
-        response.raise_for_status()
-        body = response.json()
-        return body.get("message", {}).get("content", "")
+    # ── post-process guardrail ────────────────────────────────────────────────
 
-    def _openai_compatible_chat(self, text: str) -> str:
-        base_url = self.settings.llm_base_url.rstrip("/")
-        if base_url.endswith("/v1"):
-            url = base_url + "/chat/completions"
+    def _post_process(self, data: LLMOrderStrict) -> None:
+        """Enforce invariants on the raw LLM output before using it."""
+        info = data.address_info
+        # country must always be VNM (or null)
+        if info.country is not None and info.country != "VNM":
+            info.country = "VNM"
+        # if no address_raw, sub-fields are meaningless
+        if not data.address_raw:
+            info.address_number = None
+            info.street = None
+            info.neighborhood = None
+            info.municipality = None
+            info.sub_region = None
+            info.country = None
+
+    # ── mapping to internal model ─────────────────────────────────────────────
+
+    # Prefixes that mark district-level admin units (quận/huyện/thị xã).
+    # When municipality carries one of these and neighborhood is absent, the
+    # LLM is telling us the district only — not a specific ward.
+    _DISTRICT_PREFIX_RE = re.compile(
+        r"^\s*(quận|huyện|thị\s+xã|q\.)\s*",
+        re.IGNORECASE,
+    )
+
+    def _to_internal(self, data: LLMOrderStrict) -> ExtractedOrder:
+        info = data.address_info
+        neighborhood = info.neighborhood
+        municipality = info.municipality
+
+        if neighborhood:
+            # 3-level old address: phường (neighborhood) + quận (municipality)
+            ward = neighborhood
+            district_hint = municipality
+        elif municipality and self._DISTRICT_PREFIX_RE.match(municipality):
+            # LLM gave us only a district (e.g. "Quận Bình Thạnh"), no specific ward.
+            # Route to district_hint so the normalizer uses district-key scoring
+            # instead of treating it as a ward name (which causes wrong fuzzy matches).
+            ward = None
+            district_hint = municipality
         else:
-            url = base_url + "/v1/chat/completions"
-        payload = {
-            "model": self.settings.llm_model,
-            "temperature": 0,
-            "max_tokens": self.settings.llm_max_tokens,
-            "messages": [
-                {"role": "system", "content": SYSTEM_PROMPT},
-                {"role": "user", "content": text},
-            ],
-        }
-        response = requests.post(
-            url,
-            json=payload,
-            headers={"Authorization": f"Bearer {self.settings.llm_api_key}"},
-            timeout=self.settings.llm_timeout_seconds,
+            # 2-level new address: municipality IS the ward itself
+            ward = municipality
+            district_hint = None
+
+        return ExtractedOrder(
+            name=data.recipient_name,
+            # phone_number is either "[PHONE]" (already extracted upstream) or null
+            phone=None if data.phone_number in {None, "[PHONE]"} else data.phone_number,
+            note=data.note,
+            address_raw=data.address_raw,
+            address=ExtractedAddress(
+                province=info.sub_region,
+                district_hint=district_hint,
+                ward=ward,
+                street=info.street,
+                house_number=info.address_number,
+            ),
         )
-        response.raise_for_status()
-        body = response.json()
-        return body["choices"][0]["message"]["content"]
