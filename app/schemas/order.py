@@ -84,3 +84,24 @@ class ParseResponse(BaseModel):
 
 class OcrResponse(BaseModel):
     text: str
+
+
+# --- Strict schemas for OpenAI structured outputs (no defaults = all required in JSON schema) ---
+
+class LLMAddressInfoStrict(BaseModel):
+    address_number: str | None
+    street: str | None
+    neighborhood: str | None
+    municipality: str | None
+    sub_region: str | None
+    country: str | None
+
+
+class LLMOrderStrict(BaseModel):
+    """Schema returned by OpenAI. short_reasoning is first to guide chain-of-thought ordering."""
+    short_reasoning: str | None
+    recipient_name: str | None
+    phone_number: str | None
+    note: str | None
+    address_raw: str | None
+    address_info: LLMAddressInfoStrict
