@@ -11,7 +11,7 @@ from app.schemas.order import (
     FinalAddressInfo,
     ParseResponse,
 )
-from app.services.llm_client import LLMClient
+from app.services.llm_client import CircuitBreakerOpenError, LLMClient
 
 
 class OrderParser:
@@ -22,7 +22,7 @@ class OrderParser:
             settings.admin_db_path, settings.fuzzy_threshold
         )
 
-    def parse(self, text: str, use_llm: bool = True) -> ParseResponse:
+    async def parse(self, text: str, use_llm: bool = True) -> ParseResponse:
         cleaned = compact_text(text)
         regex_phone = extract_phone(cleaned)
         rule_name, rule_address = extract_rule_hints(cleaned)
@@ -40,7 +40,9 @@ class OrderParser:
         )
         if should_call_llm:
             try:
-                extracted, _ = self.llm.extract_order(llm_input)
+                extracted, _ = await self.llm.extract_order(llm_input)
+            except (CircuitBreakerOpenError, ValueError):
+                raise
             except Exception:
                 extracted = ExtractedOrder()
 
@@ -67,12 +69,20 @@ class OrderParser:
             normalized_address.house_number or extracted.address.house_number
         )
         street = normalized_address.street or extracted.address.street
-        municipality = (
-            normalized_address.ward
-            or extracted.address.ward
-            or extracted.address.district_hint
-        )
-        sub_region = normalized_address.province or extracted.address.province
+        # Only trust normalizer's ward/province when the match is confident and
+        # unambiguous (is_normalized=True). When ambiguous (e.g. "Bình Thạnh"
+        # without province matches dozens of wards across many provinces), fall
+        # back to the LLM's raw values — wrong province is worse than null.
+        if normalized_address.is_normalized:
+            municipality = (
+                normalized_address.ward
+                or extracted.address.ward
+                or extracted.address.district_hint
+            )
+            sub_region = normalized_address.province or extracted.address.province
+        else:
+            municipality = extracted.address.ward or extracted.address.district_hint
+            sub_region = extracted.address.province  # null when no reliable match
         # Model đôi khi nhầm tên quận/phường vào sub_region (vd: "Thủ Đức" thay vì municipality).
         # Nếu sub_region tra được trong unique map và kết quả khác với chính nó → đó là municipality.
         if sub_region and not municipality:
