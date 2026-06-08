@@ -87,24 +87,47 @@ class AddressNormalizer:
         return records
 
     def _build_unique_municipality_map(self) -> dict[str, str]:
-        """Build ward_key/district_key → province_name for names globally unique to HN or HCM."""
-        key_to_all_provinces: defaultdict[str, set[str]] = defaultdict(set)
-        key_to_province_name: dict[str, str] = {}
+        """Build ward_key/district_key → province_name for names globally unique to HN or HCM.
+
+        District keys and ward keys are tracked separately before merging so that a
+        ward named "Bình Thạnh" appearing in many provinces cannot pollute the
+        district-key entry for "Quận Bình Thạnh" which is unique to HCM.
+        """
+        # district_key tracking (separate from ward_key to avoid cross-contamination)
+        dk_all: defaultdict[str, set[str]] = defaultdict(set)
+        dk_name: dict[str, str] = {}
+        # ward_key tracking
+        wk_all: defaultdict[str, set[str]] = defaultdict(set)
+        wk_name: dict[str, str] = {}
 
         for rec in self.records:
-            for key_field in ("ward_key", "district_key"):
-                key = rec[key_field]
-                if not key:
-                    continue
-                key_to_all_provinces[key].add(rec["province_key"])
-                if rec["province_key"] in _HN_HCM_PROVINCE_KEYS:
-                    key_to_province_name.setdefault(key, rec["province_name"])
+            pkey = rec["province_key"]
+            is_hn_hcm = pkey in _HN_HCM_PROVINCE_KEYS
 
-        return {
-            key: key_to_province_name[key]
-            for key, provinces in key_to_all_provinces.items()
-            if len(provinces) == 1 and key in key_to_province_name
+            dk = rec["district_key"]
+            if dk:
+                dk_all[dk].add(pkey)
+                if is_hn_hcm:
+                    dk_name.setdefault(dk, rec["province_name"])
+
+            wk = rec["ward_key"]
+            if wk:
+                wk_all[wk].add(pkey)
+                if is_hn_hcm:
+                    wk_name.setdefault(wk, rec["province_name"])
+
+        district_unique = {
+            key: dk_name[key]
+            for key, provinces in dk_all.items()
+            if len(provinces) == 1 and key in dk_name
         }
+        ward_unique = {
+            key: wk_name[key]
+            for key, provinces in wk_all.items()
+            if len(provinces) == 1 and key in wk_name
+        }
+        # district keys take priority (more specific) when both match the same string
+        return {**ward_unique, **district_unique}
 
     def infer_province_from_municipality(self, municipality: str) -> str | None:
         """Return 'Hà Nội' or 'Hồ Chí Minh' if municipality uniquely identifies one of them."""
@@ -261,10 +284,12 @@ class AddressNormalizer:
             return 0.0
         if query == candidate:
             return 100.0
-        return max(
-            fuzz.ratio(query, candidate),
-            fuzz.token_sort_ratio(query, candidate),
-        )
+        r = fuzz.ratio(query, candidate)
+        tsr = fuzz.token_sort_ratio(query, candidate)
+        # Allow token-sort boost only when the base ratio already shows real similarity.
+        # Without this guard, purely reversed two-token names like "binh thanh" vs
+        # "thanh binh" score 100 via token_sort despite being different places.
+        return tsr if r >= 60 else r
 
     def _combined_score(
         self,
