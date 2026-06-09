@@ -25,7 +25,9 @@ ADMIN_PREFIXES = (
 
 def compact_text(text: str) -> str:
     text = unicodedata.normalize("NFKC", text or "")
-    text = re.sub(r"[\t\r\n]+", " ", text)
+    text = re.sub(r"[\t\r]+", " ", text)
+    text = re.sub(r"\n+", ", ", text)       # preserve line boundaries as separators
+    text = re.sub(r",\s*,", ", ", text)     # collapse consecutive commas
     text = re.sub(r"\s+", " ", text)
     return text.strip()
 

@@ -12,7 +12,7 @@ Request
         └─► parser.py (async parse)
               ├─ rule_extractor / phone_extractor  [sync, không đổi]
               └─► llm_client.py
-                    ├─ Input Guardrail (> 500 ký tự → ValueError)
+                    ├─ Input Guardrail (> 5000 ký tự → ValueError)
                     ├─ Circuit Breaker (CLOSED → OPEN → HALF_OPEN)
                     ├─ Retry + Exponential Backoff với Jitter
                     ├─ AsyncOpenAI.beta.chat.completions.parse()  ← Structured Output
@@ -123,7 +123,7 @@ OpenAI đảm bảo 100% JSON đúng schema. Không cần parse/regex thủ côn
 
 #### 5. Input Guardrail
 
-`len(text) > 500` → raise `ValueError` trước khi gọi API.
+`len(text) > 5000` → raise `ValueError` trước khi gọi API.
 
 #### 6. Post-process Guardrail
 

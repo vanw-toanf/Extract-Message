@@ -10,11 +10,9 @@ RUN --mount=type=cache,target=/root/.cache/pip \
 RUN --mount=type=cache,target=/root/.cache/pip \
     pip install --timeout 300 --retries 5 easyocr==1.7.2
 
+COPY requirements.txt /tmp/requirements.txt
 RUN --mount=type=cache,target=/root/.cache/pip \
-    pip install --timeout 300 --retries 5 \
-    fastapi==0.118.0 "uvicorn[standard]==0.37.0" pydantic==2.11.7 \
-    python-dotenv==1.1.0 requests==2.33.1 rapidfuzz==3.13.0 \
-    openai==2.30.0 python-multipart==0.0.20 pillow==12.0.0
+    pip install --timeout 300 --retries 5 -r /tmp/requirements.txt
 
 FROM python:3.12-slim AS runtime
 

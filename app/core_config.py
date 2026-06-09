@@ -26,6 +26,8 @@ class Settings(BaseModel):
     fuzzy_threshold: int = int(os.getenv("FUZZY_THRESHOLD", "84"))
     llm_max_concurrent: int = int(os.getenv("LLM_MAX_CONCURRENT", "20"))
     llm_queue_timeout: float = float(os.getenv("LLM_QUEUE_TIMEOUT_SECONDS", "30"))
+    goong_api: str = os.getenv("GOONG_API", "")
+    goong_timeout_seconds: float = float(os.getenv("GOONG_TIMEOUT_SECONDS", "5"))
 
 
 @lru_cache

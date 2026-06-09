@@ -1,4 +1,6 @@
 import asyncio
+import re
+from contextlib import asynccontextmanager
 from functools import lru_cache
 
 from fastapi import FastAPI, File, HTTPException, UploadFile
@@ -13,19 +15,42 @@ from app.schemas.order import (
     ParseRequest,
     ParseResponse,
 )
-from app.services.llm_client import CircuitBreakerOpenError
-
-app = FastAPI(title="Clipboard Parsing & Smart Order API")
+from app.pipeline.text_utils import strip_accents
+from app.schemas.order import ExtractedAddress as _ExtractedAddress
+from app.services.base_client import CircuitBreakerOpenError
+from app.services.goong_client import GeocodeResult, GoongClient, GoongGeocodeFailed
 
 # asyncio.Semaphore limits concurrent LLM calls without blocking the event loop
 _llm_semaphore = asyncio.Semaphore(get_settings().llm_max_concurrent)
 
-_MAX_INPUT_CHARS = 500
+
+@asynccontextmanager
+async def lifespan(_: FastAPI):
+    # Eager-init singletons so first request pays no setup cost.
+    # httpx.AsyncClient and AsyncOpenAI keep their connection pools alive
+    # for the full server lifetime.
+    get_settings()
+    get_parser()
+    get_goong()
+    yield
+    # Gracefully drain connection pools on shutdown.
+    await get_goong().aclose()
+    await get_parser().aclose()
+
+
+app = FastAPI(title="Clipboard Parsing & Smart Order API", lifespan=lifespan)
+
+_MAX_INPUT_CHARS = 5000  # R-07: API-level input limit
 
 
 @lru_cache
 def get_parser() -> OrderParser:
     return OrderParser(get_settings())
+
+
+@lru_cache
+def get_goong() -> GoongClient:
+    return GoongClient(get_settings())
 
 
 @app.get("/health")
@@ -42,7 +67,7 @@ async def _parse_with_llm(text: str) -> ParseResponse:
     except asyncio.TimeoutError:
         raise HTTPException(status_code=429, detail="Server busy, please retry later")
     try:
-        return await get_parser().parse(text, use_llm=True)
+        result = await get_parser().parse(text, use_llm=True)
     except CircuitBreakerOpenError:
         raise HTTPException(
             status_code=503,
@@ -51,12 +76,104 @@ async def _parse_with_llm(text: str) -> ParseResponse:
     finally:
         _llm_semaphore.release()
 
+    # R-04: address must be present
+    if not (result.address_new or result.address_raw):
+        raise HTTPException(status_code=422, detail="address_not_found")
+
+    # R-05: geocode with fallback chain
+    try:
+        lat, lng = await _geocode_with_fallback(result)
+        result.lat = lat
+        result.lng = lng
+    except GoongGeocodeFailed:
+        raise HTTPException(status_code=422, detail="geocode_failed")
+
+    return result
+
+
+def _goong_province(sub_region: str) -> str:
+    """Strip admin prefixes that confuse Goong ('Thủ Đô Hà Nội' → 'Hà Nội')."""
+    return re.sub(r"^(thủ\s+đô|thành\s+phố|tỉnh)\s+", "", sub_region, flags=re.IGNORECASE).strip()
+
+
+async def _geocode_with_fallback(result: ParseResponse) -> tuple[float, float]:
+    """Try geocoding with progressively simpler addresses.
+
+    1. address_new (normalized admin names)
+    2. address_raw (original text, in case normalizer introduced wrong names)
+    3. house_number + street + province (drop municipality — often source of ambiguity
+       when old/new admin names mismatch in Goong's DB)
+
+    Each candidate is also validated: Goong's compound.province is mapped from old
+    to new admin system (via AddressNormalizer) and compared with expected sub_region.
+    """
+    goong = get_goong()
+    info = result.address_info
+    candidates: list[str] = []
+
+    if result.address_new:
+        candidates.append(result.address_new)
+    if result.address_raw and result.address_raw != result.address_new:
+        candidates.append(result.address_raw)
+    # minimal: street + province (short name), no municipality
+    province = _goong_province(info.sub_region) if info.sub_region else None
+    minimal = ", ".join(
+        p for p in [info.address_number, info.street, province] if p
+    )
+    if minimal and minimal not in candidates:
+        candidates.append(minimal)
+
+    last_exc: GoongGeocodeFailed | None = None
+    for addr in candidates:
+        try:
+            geo = await goong.geocode(addr)
+        except GoongGeocodeFailed as exc:
+            last_exc = exc
+            continue
+        if not _province_matches(geo, info.sub_region):
+            last_exc = GoongGeocodeFailed(
+                f"Province mismatch: expected {info.sub_region!r}, "
+                f"Goong returned {geo.compound_province!r}"
+            )
+            continue
+        return geo.lat, geo.lng
+
+    raise last_exc or GoongGeocodeFailed("All geocode attempts failed")
+
+
+def _province_matches(geo: GeocodeResult, expected_sub_region: str | None) -> bool:
+    """Check if Goong compound.province (old admin system) corresponds to expected
+    province (new admin system) by mapping through AddressNormalizer.
+
+    Returns True when:
+    - No expected province (can't validate)
+    - No Goong compound province (can't validate)
+    - Normalizer maps old→new province and it fuzzy-matches expected
+    """
+    if not expected_sub_region or not geo.compound_province:
+        return True
+
+    # Map Goong's old-system address to new province via AddressNormalizer DB
+    old_addr = _ExtractedAddress(
+        province=geo.compound_province,
+        district_hint=geo.compound_district,
+        ward=geo.compound_commune,
+    )
+    normalized = get_parser().address_normalizer.normalize(old_addr)
+    mapped_province = normalized.province or geo.compound_province
+
+    # Normalize both for comparison (strip prefixes, remove diacritics)
+    a = strip_accents(_goong_province(mapped_province).lower())
+    b = strip_accents(_goong_province(expected_sub_region).lower())
+    # Allow partial match — e.g. "ha noi" in "thu do ha noi"
+    return a == b or a in b or b in a
+
 
 def _check_input_length(text: str) -> None:
     if len(text) > _MAX_INPUT_CHARS:
         raise HTTPException(
             status_code=400,
-            detail=f"input_too_long: max {_MAX_INPUT_CHARS} chars, got {len(text)}",
+            detail="input_too_long",
         )
 
 

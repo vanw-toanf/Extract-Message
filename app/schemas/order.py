@@ -80,6 +80,8 @@ class ParseResponse(BaseModel):
     address_raw: str | None = None
     address_new: str | None = None
     address_info: FinalAddressInfo = Field(default_factory=FinalAddressInfo)
+    lat: float | None = None
+    lng: float | None = None
 
 
 class OcrResponse(BaseModel):

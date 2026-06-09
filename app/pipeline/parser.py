@@ -11,7 +11,8 @@ from app.schemas.order import (
     FinalAddressInfo,
     ParseResponse,
 )
-from app.services.llm_client import CircuitBreakerOpenError, LLMClient
+from app.services.base_client import CircuitBreakerOpenError
+from app.services.llm_client import LLMClient
 
 
 class OrderParser:
@@ -50,7 +51,7 @@ class OrderParser:
             extracted.phone = regex_phone
         if not extracted.name and rule_name:
             extracted.name = rule_name
-        if rule_note:
+        if rule_note and not extracted.note:
             extracted.note = rule_note
         self._merge_address_hints(extracted.address, rule_address)
 
@@ -115,6 +116,9 @@ class OrderParser:
                 country="VNM" if has_address else None,
             ),
         )
+
+    async def aclose(self) -> None:
+        await self.llm.aclose()
 
     def _can_skip_llm(
         self,
