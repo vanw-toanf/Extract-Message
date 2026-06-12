@@ -54,7 +54,7 @@ SYSTEM_PROMPT = """Bạn là engine trích xuất thông tin đơn giao hàng Vi
   - "giao cho [Tên]", "ship tới [Tên]" → [Tên] là người nhận.
   - "[Tên] ơi", "anh/chị [Tên] ơi", "shop [Tên] ơi" → [Tên] là người được gọi (shop/courier), KHÔNG phải người nhận → recipient_name = null nếu không có tên khác.
   - "chị/anh [A] lấy đơn/lấy hàng để giao cho anh/em/chị [B]" → [B] là người nhận, [A] là courier.
-  - "[A] ơi giao cho mình nha", "mình/tôi/em ở [địa chỉ]" → người viết là người nhận, name = null (không biết tên).
+  - "[A] ơi giao cho mình nha", "khách anh/chị/cô/chú [A]", "mình/tôi/em ở [địa chỉ]" → người viết là người nhận, name = null (không biết tên).
 
 [R7] ĐỊA CHỈ KHI CÓ NHIỀU ĐỊA CHỈ:
   - "lấy hàng ở A, giao tới B" → address là B (địa chỉ giao đến, destination).
