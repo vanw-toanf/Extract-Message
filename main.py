@@ -80,6 +80,10 @@ async def _parse_with_llm(text: str) -> ParseResponse:
     if not (result.address_new or result.address_raw):
         raise HTTPException(status_code=422, detail="address_not_found")
 
+    # Without province we can't validate any geocoding result — skip the API call
+    if not result.address_info or not result.address_info.sub_region:
+        raise HTTPException(status_code=422, detail="geocode_failed")
+
     # R-05: geocode with fallback chain
     try:
         lat, lng = await _geocode_with_fallback(result)
@@ -150,7 +154,11 @@ def _province_matches(geo: GeocodeResult, expected_sub_region: str | None) -> bo
     - No Goong compound province (can't validate)
     - Normalizer maps old→new province and it fuzzy-matches expected
     """
-    if not expected_sub_region or not geo.compound_province:
+    # Goong couldn't determine province → coordinate is ambiguous, reject
+    if not geo.compound_province:
+        return False
+    # We have no expected province to validate against → trust Goong's result
+    if not expected_sub_region:
         return True
 
     # Map Goong's old-system address to new province via AddressNormalizer DB
