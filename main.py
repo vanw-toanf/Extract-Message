@@ -4,6 +4,7 @@ from contextlib import asynccontextmanager
 from functools import lru_cache
 
 from fastapi import FastAPI, File, HTTPException, UploadFile
+from fastapi.middleware.cors import CORSMiddleware
 
 from app.core_config import get_settings
 from app.pipeline.ocr import image_bytes_to_text
@@ -39,6 +40,12 @@ async def lifespan(_: FastAPI):
 
 
 app = FastAPI(title="Clipboard Parsing & Smart Order API", lifespan=lifespan)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["POST", "GET"],
+    allow_headers=["Content-Type"],
+)
 
 _MAX_INPUT_CHARS = 5000  # R-07: API-level input limit
 
