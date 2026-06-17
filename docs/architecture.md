@@ -228,9 +228,164 @@ POST /parse-text  {"text": "..."}
 |---|---|---|
 | 400 | `input_too_long` | Text > 5000 ký tự |
 | 422 | `address_not_found` | Không tìm ra địa chỉ |
-| 422 | `geocode_failed` | Goong không resolve được |
+| 422 | `geocode_failed` | sub_region null, hoặc Goong không resolve được |
 | 429 | `Server busy...` | Semaphore queue timeout |
 | 503 | `LLM service unavailable` | Circuit breaker OPEN |
+
+---
+
+## Mermaid Diagrams
+
+> Paste từng block vào **[mermaid.live](https://mermaid.live)** để xem interactive.
+
+---
+
+### 1. Tổng quan hệ thống
+
+```mermaid
+flowchart LR
+    Client([Client]) -->|HTTP| FE
+
+    subgraph FE["FastAPI · main.py"]
+        direction TB
+        E1["POST /parse-text"]
+        E2["POST /parse-image"]
+        E3["POST /ocr-image"]
+        E4["GET /health"]
+    end
+
+    FE -->|parse| Parser
+    FE -->|geocode| Goong
+
+    subgraph Parser["OrderParser · parser.py"]
+        direction TB
+        R["Rule extractors\nphone · name · note · address"]
+        L["LLMClient\ngpt-4o-mini"]
+        N["AddressNormalizer\nfuzzy match + AdminDB"]
+        R --> L --> N
+    end
+
+    subgraph Goong["GoongClient · goong_client.py"]
+        direction TB
+        FB["Fallback chain\naddress_new → raw → street+province"]
+        PV["Province validation\nGoong compound → new AdminDB"]
+        FB --> PV
+    end
+
+    L -->|structured output| OAI[(OpenAI API)]
+    FB -->|geocode| GNG[(Goong.io API)]
+```
+
+---
+
+### 2. Luồng xử lý một request
+
+```mermaid
+flowchart TD
+    IN([POST /parse-text]) --> L1{len > 5000?}
+    L1 -->|yes| E400[400 input_too_long]
+    L1 -->|no| L2{Semaphore\nqueue}
+    L2 -->|timeout| E429[429 Server busy]
+    L2 -->|ok| PARSE["OrderParser.parse()"]
+    PARSE -->|CircuitBreakerOpen| E503[503 LLM unavailable]
+    PARSE --> L3{address_raw\nor address_new?}
+    L3 -->|null| E422A[422 address_not_found]
+    L3 -->|ok| L4{sub_region\nnull?}
+    L4 -->|yes| E422B[422 geocode_failed]
+    L4 -->|no| GEO["GoongClient.geocode()\nfallback chain"]
+    GEO -->|all failed| E422B
+    GEO -->|ok| R200["200 OK\nrecipient_name · phone · note\naddress_new · lat · lng"]
+
+    style E400 fill:#f66,color:#fff
+    style E429 fill:#f66,color:#fff
+    style E503 fill:#f66,color:#fff
+    style E422A fill:#f96,color:#fff
+    style E422B fill:#f96,color:#fff
+    style R200 fill:#6c6,color:#fff
+```
+
+---
+
+### 3. BaseHttpClient — kế thừa OOP
+
+```mermaid
+classDiagram
+    class _CircuitBreaker {
+        CLOSED | OPEN | HALF_OPEN
+        failure_count int
+        last_failure_time float
+        call(coro)
+        _effective_state()
+    }
+
+    class BaseHttpClient {
+        MAX_RETRIES = 2
+        BASE_RETRY_DELAY = 1.0s
+        CIRCUIT_FAILURE_THRESHOLD = 5
+        CIRCUIT_RECOVERY_TIMEOUT = 30s
+        _RETRYABLE tuple
+        _protected_call(factory)
+        _retry(factory)
+    }
+
+    class LLMClient {
+        _RETRYABLE RateLimitError · TimeoutError · ConnectionError · InternalServerError
+        extract_order(text) ExtractedOrder
+        aclose()
+    }
+
+    class GoongClient {
+        _RETRYABLE TimeoutException · ConnectError · RemoteProtocolError
+        geocode(address) GeocodeResult
+        aclose()
+    }
+
+    BaseHttpClient *-- _CircuitBreaker : owns
+    BaseHttpClient <|-- LLMClient
+    BaseHttpClient <|-- GoongClient
+```
+
+---
+
+### 4. Geocoding fallback chain
+
+```mermaid
+flowchart TD
+    S([sub_region ≠ null]) --> C1
+
+    C1["①  address_new\nnormalized admin name"]
+    C1 --> G1{Goong\ngeocodes?}
+    G1 -->|no result / admin centroid| C2
+    G1 -->|ok| P1{compound_province\nnull?}
+    P1 -->|yes| C2
+    P1 -->|no| M1{province\nmatches?}
+    M1 -->|no| C2
+    M1 -->|yes| OK
+
+    C2["②  address_raw\noriginal LLM text"]
+    C2 --> G2{Goong\ngeocodes?}
+    G2 -->|fail| C3
+    G2 -->|ok| P2{compound_province\nnull?}
+    P2 -->|yes| C3
+    P2 -->|no| M2{province\nmatches?}
+    M2 -->|no| C3
+    M2 -->|yes| OK
+
+    C3["③  street + province_short\nno municipality"]
+    C3 --> G3{Goong\ngeocodes?}
+    G3 -->|fail| FAIL
+    G3 -->|ok| P3{compound_province\nnull?}
+    P3 -->|yes| FAIL
+    P3 -->|no| M3{province\nmatches?}
+    M3 -->|no| FAIL
+    M3 -->|yes| OK
+
+    OK(["✓  lat, lng"])
+    FAIL(["✗  422 geocode_failed"])
+
+    style OK fill:#6c6,color:#fff
+    style FAIL fill:#f66,color:#fff
+```
 
 ---
 
