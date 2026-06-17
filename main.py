@@ -199,6 +199,7 @@ def _check_input_length(text: str) -> None:
 @app.post("/parse-text", response_model=ParseResponse)
 async def parse_text(request: ParseRequest) -> ParseResponse:
     _check_input_length(request.text)
+    asyncio.create_task(_increment_request())
     return await _parse_with_llm(request.text)
 
 
@@ -234,15 +235,28 @@ def normalize_address(address: ExtractedAddress) -> NormalizedAddress:
     return get_parser().address_normalizer.normalize(address)
 
 
-_FEEDBACK_PATH = Path("data/feedback.jsonl")
+_FEEDBACK_PATH     = Path("data/feedback.jsonl")
+_REQUEST_COUNT_PATH = Path("data/request_count.txt")
+_count_lock        = asyncio.Lock()
+
+
+async def _increment_request() -> None:
+    async with _count_lock:
+        n = int(_REQUEST_COUNT_PATH.read_text()) if _REQUEST_COUNT_PATH.exists() else 0
+        _REQUEST_COUNT_PATH.parent.mkdir(parents=True, exist_ok=True)
+        _REQUEST_COUNT_PATH.write_text(str(n + 1))
+
 
 class FeedbackRequest(BaseModel):
     input_text: str
     api_response: dict
-    corrections: dict   # {"f-name": {"original": "...", "corrected": "..."}, ...}
+    corrections: dict   # {"f-name": {"original": "...", "corrected": "..."}}
+
 
 @app.post("/feedback", status_code=204)
 async def submit_feedback(item: FeedbackRequest) -> None:
+    if not item.corrections:
+        return
     record = {
         "ts": datetime.now(timezone.utc).isoformat(),
         "input_text": item.input_text,
@@ -252,3 +266,19 @@ async def submit_feedback(item: FeedbackRequest) -> None:
     _FEEDBACK_PATH.parent.mkdir(parents=True, exist_ok=True)
     with _FEEDBACK_PATH.open("a", encoding="utf-8") as f:
         f.write(json.dumps(record, ensure_ascii=False) + "\n")
+
+
+@app.get("/feedback")
+async def get_feedback() -> dict:
+    records = []
+    if _FEEDBACK_PATH.exists():
+        for line in _FEEDBACK_PATH.read_text(encoding="utf-8").splitlines():
+            if line.strip():
+                records.append(json.loads(line))
+    total_requests = 0
+    if _REQUEST_COUNT_PATH.exists():
+        try:
+            total_requests = int(_REQUEST_COUNT_PATH.read_text())
+        except ValueError:
+            pass
+    return {"total_requests": total_requests, "records": records}
