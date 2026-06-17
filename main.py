@@ -1,10 +1,14 @@
 import asyncio
+import json
 import re
 from contextlib import asynccontextmanager
+from datetime import datetime, timezone
 from functools import lru_cache
+from pathlib import Path
 
 from fastapi import FastAPI, File, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
 
 from app.core_config import get_settings
 from app.pipeline.ocr import image_bytes_to_text
@@ -228,3 +232,23 @@ async def parse_image(file: UploadFile = File(...)) -> ParseResponse:
 @app.post("/normalize-address", response_model=NormalizedAddress)
 def normalize_address(address: ExtractedAddress) -> NormalizedAddress:
     return get_parser().address_normalizer.normalize(address)
+
+
+_FEEDBACK_PATH = Path("data/feedback.jsonl")
+
+class FeedbackRequest(BaseModel):
+    input_text: str
+    api_response: dict
+    corrections: dict   # {"f-name": {"original": "...", "corrected": "..."}, ...}
+
+@app.post("/feedback", status_code=204)
+async def submit_feedback(item: FeedbackRequest) -> None:
+    record = {
+        "ts": datetime.now(timezone.utc).isoformat(),
+        "input_text": item.input_text,
+        "api_response": item.api_response,
+        "corrections": item.corrections,
+    }
+    _FEEDBACK_PATH.parent.mkdir(parents=True, exist_ok=True)
+    with _FEEDBACK_PATH.open("a", encoding="utf-8") as f:
+        f.write(json.dumps(record, ensure_ascii=False) + "\n")
