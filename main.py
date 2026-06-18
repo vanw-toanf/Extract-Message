@@ -1,6 +1,5 @@
 import asyncio
 import json
-import re
 from contextlib import asynccontextmanager
 from datetime import datetime, timezone
 from functools import lru_cache
@@ -20,7 +19,7 @@ from app.schemas.order import (
     ParseRequest,
     ParseResponse,
 )
-from app.pipeline.text_utils import strip_accents
+from app.pipeline.text_utils import short_province, strip_accents
 from app.schemas.order import ExtractedAddress as _ExtractedAddress
 from app.services.base_client import CircuitBreakerOpenError
 from app.services.goong_client import GeocodeResult, GoongClient, GoongGeocodeFailed
@@ -106,9 +105,7 @@ async def _parse_with_llm(text: str) -> ParseResponse:
     return result
 
 
-def _goong_province(sub_region: str) -> str:
-    """Strip admin prefixes that confuse Goong ('Thủ Đô Hà Nội' → 'Hà Nội')."""
-    return re.sub(r"^(thủ\s+đô|thành\s+phố|tỉnh)\s+", "", sub_region, flags=re.IGNORECASE).strip()
+_goong_province = short_province
 
 
 async def _geocode_with_fallback(result: ParseResponse) -> tuple[float, float]:

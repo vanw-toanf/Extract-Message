@@ -51,6 +51,22 @@ def normalize_key(text: str, remove_admin_prefix: bool = True) -> str:
     return key
 
 
+_PROVINCE_ADMIN_PREFIX_RE = re.compile(
+    r"^(thủ\s+đô|thành\s+phố|tỉnh)\s+",
+    re.IGNORECASE,
+)
+
+
+def short_province(name: str | None) -> str | None:
+    """Strip admin-level prefix from province name for display and geocoding.
+
+    'Thủ đô Hà Nội' → 'Hà Nội', 'Thành phố Hồ Chí Minh' → 'Hồ Chí Minh'
+    """
+    if not name:
+        return name
+    return _PROVINCE_ADMIN_PREFIX_RE.sub("", name).strip() or name
+
+
 def normalize_text_key(text: str, remove_admin_prefix: bool = True) -> str:
     key = unicodedata.normalize("NFKC", text or "").lower()
     key = re.sub(r"[^\w\s]", " ", key)
