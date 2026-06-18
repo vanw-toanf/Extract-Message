@@ -81,10 +81,9 @@ class OrderParser:
             normalized_address.house_number or extracted.address.house_number
         )
         street = normalized_address.street or extracted.address.street
-        # Only trust normalizer's ward/province when the match is confident and
-        # unambiguous (is_normalized=True). When ambiguous (e.g. "Bình Thạnh"
-        # without province matches dozens of wards across many provinces), fall
-        # back to the LLM's raw values — wrong province is worse than null.
+        # Trust normalizer's ward/province when confident and unambiguous.
+        # When ambiguous (e.g. "Phường 14, Q10" split into two new wards),
+        # fall back to district_hint — cleaner than showing the old ward name.
         if normalized_address.is_normalized:
             municipality = (
                 normalized_address.ward
@@ -93,8 +92,8 @@ class OrderParser:
             )
             sub_region = normalized_address.province or extracted.address.province
         else:
-            municipality = extracted.address.ward or extracted.address.district_hint
-            sub_region = extracted.address.province  # null when no reliable match
+            municipality = extracted.address.district_hint or extracted.address.ward
+            sub_region = normalized_address.province or extracted.address.province
         # Model đôi khi nhầm tên quận/phường vào sub_region (vd: "Thủ Đức" thay vì municipality).
         # Nếu sub_region tra được trong unique map và kết quả khác với chính nó → đó là municipality.
         if sub_region and not municipality:
