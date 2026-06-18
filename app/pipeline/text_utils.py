@@ -52,7 +52,7 @@ def normalize_key(text: str, remove_admin_prefix: bool = True) -> str:
 
 
 _PROVINCE_ADMIN_PREFIX_RE = re.compile(
-    r"^(thủ\s+đô|thành\s+phố|tỉnh)\s+",
+    r"^(thủ\s+đô|thành\s+phố|tỉnh|t\.?p\.?)\s+",
     re.IGNORECASE,
 )
 
@@ -82,13 +82,19 @@ def short_province(name: str | None) -> str | None:
 def canonical_province(name: str | None) -> str | None:
     """Normalize province: strip admin prefix then resolve common aliases.
 
-    'Thành phố Hồ Chí Minh' → 'Hồ Chí Minh', 'Sài Gòn' → 'Hồ Chí Minh'
+    'Thành phố Hồ Chí Minh' → 'Hồ Chí Minh', 'Sài Gòn' → 'Hồ Chí Minh',
+    'TP.HCM' → 'Hồ Chí Minh' (dots/punctuation stripped before lookup)
     """
     name = short_province(name)
     if not name:
         return name
     key = strip_accents(name).lower().strip()
-    return _PROVINCE_ALIAS.get(key, name)
+    if key in _PROVINCE_ALIAS:
+        return _PROVINCE_ALIAS[key]
+    # Normalize punctuation: strip dots/hyphens so "tp.hcm" matches "tphcm"
+    key_clean = re.sub(r"[^a-z0-9 ]", "", key)
+    key_clean = re.sub(r"\s+", " ", key_clean).strip()
+    return _PROVINCE_ALIAS.get(key_clean, name)
 
 
 def normalize_text_key(text: str, remove_admin_prefix: bool = True) -> str:
