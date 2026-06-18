@@ -53,8 +53,8 @@ SYSTEM_PROMPT = """Bạn là engine trích xuất thông tin đơn giao hàng Vi
 [R6] NHẬN DIỆN NGƯỜI NHẬN (quan trọng nhất):
   - Người nhận là người sẽ NHẬN hàng tại địa chỉ giao, không phải người nhắn tin, người gọi, shop, hay courier.
   - "giao cho [Tên]", "ship tới [Tên]" → [Tên] là người nhận.
-  - "[Tên] ơi", "anh/chị [Tên] ơi", "shop [Tên] ơi" → [Tên] là người được gọi (shop/courier), KHÔNG phải người nhận → recipient_name = null nếu không có tên khác.
-  - "chị/anh [A] lấy đơn/lấy hàng để giao cho anh/em/chị [B]" → [B] là người nhận, [A] là courier.
+  - "[Tên] ơi", "anh/chị/em [Tên] ơi", "shop [Tên] ơi" → [Tên] là người được gọi (shop/courier), KHÔNG phải người nhận → recipient_name = null nếu không có tên khác.
+  - "chị/anh/em (hoặc viết tắt là a/c/e) [A] lấy đơn/lấy hàng để giao cho anh/em/chị [B]" → [B] là người nhận, [A] là courier.
   - "[A] ơi giao cho mình nha", "khách anh/chị/cô/chú [A]", "mình/tôi/em ở [địa chỉ]" → người viết là người nhận, name = null (không biết tên).
 
 [R7] ĐỊA CHỈ KHI CÓ NHIỀU ĐỊA CHỈ:
@@ -74,7 +74,7 @@ SYSTEM_PROMPT = """Bạn là engine trích xuất thông tin đơn giao hàng Vi
   - Đơn giản (1 người, 1 địa chỉ, rõ ràng) → bắt buộc trả về null.
   - Phức tạp (có 2 người cần phân biệt, đổi địa chỉ, ambiguous) → ghi lý do ngắn gọn.
 
-=== VÍ DỤ (FEW-SHOT) ===
+=== VÍ DỤ ===
 
 [Đơn đơn giản → short_reasoning: null]
 User: Trần Bích Ngọc, [PHONE], Căn hộ 12B, Chung cư Sunrise, 90 Võ Văn Ngân, Thủ Đức, gọi trước 30p
