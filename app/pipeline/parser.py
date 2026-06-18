@@ -168,6 +168,18 @@ class OrderParser:
         self, address: ExtractedAddress, hints: ExtractedAddress
     ) -> None:
         for field in ("province", "district_hint", "ward"):
+            if field == "ward" and hints.ward and address.street:
+                # Don't use rule ward hint when its core name is a substring of the
+                # existing street — e.g. WARD_RE matches "xã Paris" inside street
+                # "Công xã Paris", producing a spurious ward hint from a street name.
+                ward_core = re.sub(
+                    r"^(phường|xã|thị trấn|p\.?|x\.?|tt\.?)\s+",
+                    "",
+                    hints.ward,
+                    flags=re.IGNORECASE,
+                ).strip().lower()
+                if ward_core and ward_core in address.street.lower():
+                    continue
             if not getattr(address, field) and getattr(hints, field):
                 setattr(address, field, getattr(hints, field))
             elif field in {"district_hint", "ward"} and self._should_override_admin_part(

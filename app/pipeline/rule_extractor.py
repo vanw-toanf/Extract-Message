@@ -126,8 +126,10 @@ def _extract_ward(text: str) -> str | None:
         return None
     raw = match.group(1).strip()
     raw_lower = raw.lower()
+    # Longer/more-specific alternatives must come before short ones (e.g. "xã" before "x\.?")
+    # so that "xã Paris" strips "xã " not just "x", preventing output like "Xã ã Paris"
     name = re.sub(
-        r"^(phường|phuong|thị trấn|thi tran|p\.?|x\.?|xã|xa|tt\.?)\s*",
+        r"^(phường|phuong|thị trấn|thi tran|xã|xa|tt\.?|p\.?|x\.?)\s*",
         "",
         raw,
         flags=re.IGNORECASE,
