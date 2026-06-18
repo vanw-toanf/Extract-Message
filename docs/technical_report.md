@@ -2,7 +2,7 @@
 
 ## 1. Mục Tiêu
 
-Dự án xây dựng hệ thống tự động bóc tách thông tin đơn giao hàng từ văn bản hoặc ảnh chụp màn hình hội thoại. Hệ thống hướng tới bối cảnh Social Commerce Việt Nam, nơi nhân viên thường nhận đơn qua Facebook, TikTok, Zalo hoặc livestream với dữ liệu không chuẩn, nhiều viết tắt, sai chính tả và địa chỉ cũ sau sáp nhập hành chính 2025.
+Dự án xây dựng hệ thống tự động bóc tách thông tin đơn giao hàng từ văn bản. Hệ thống hướng tới bối cảnh Social Commerce Việt Nam, nơi nhân viên thường nhận đơn qua Facebook, TikTok, Zalo hoặc livestream với dữ liệu không chuẩn, nhiều viết tắt, sai chính tả và địa chỉ cũ sau sáp nhập hành chính 2025.
 
 Output cuối cùng là JSON chuẩn để tự động điền form tạo đơn:
 
@@ -29,68 +29,106 @@ Output cuối cùng là JSON chuẩn để tự động điền form tạo đơn
 
 ## 2. Kiến Trúc Tổng Quan
 
-```mermaid
-flowchart LR
-    Client([Client]) -->|HTTP| FE
-
-    subgraph FE["FastAPI · main.py"]
-        direction TB
-        E1["POST /parse-text"]
-        E2["POST /parse-image"]
-        E3["POST /ocr-image"]
-        E4["POST /feedback"]
-        E5["GET /health"]
-    end
-
-    FE -->|parse| Parser
-    FE -->|geocode| Goong
-
-    subgraph Parser["OrderParser · parser.py"]
-        direction TB
-        R["Rule extractors\nphone · name · note · address"]
-        L["LLMClient\ngpt-4o-mini"]
-        N["AddressNormalizer\nfuzzy match + AdminDB"]
-        R --> L --> N
-    end
-
-    subgraph Goong["GoongClient · goong_client.py"]
-        direction TB
-        FB["Fallback chain\naddress_new → raw → street+province"]
-        PV["Province validation\nGoong compound → new AdminDB"]
-        FB --> PV
-    end
-
-    L -->|structured output| OAI[(OpenAI API)]
-    FB -->|geocode| GNG[(Goong.io API)]
+```
+┌──────────────────────────────────────────────────────────────────────────────────┐
+│                              KIẾN TRÚC HỆ THỐNG                                  │
+├──────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                  │
+│   ┌────────────┐          ┌──────────────────────────────────────────────────┐   │
+│   │ Ứng dụng   │  Request │              LỚP API — FastAPI                   │   │
+│   │  /Web      │─────────▶├──────────────────────────────────────────────────┤   │
+│   │            │          │  POST /parse-text    Phân tích văn bản đơn hàng  │   │
+│   └────────────┘          │  POST /feedback      Ghi nhận phản hồi người dùng│   │
+│                           │  GET  /health        Kiểm tra trạng thái hệ thống│   │
+│                           └────────────┬──────────────────┬──────────────────┘   │
+│                                        │                  │                      │
+│                                        ▼                  ▼                      │
+│               ┌────────────────────────────┐  ┌──────────────────────────────┐   │
+│               │     XỬ LÝ ĐƠN HÀNG         │  │    GEOCODING — Goong.io      │   │
+│               ├────────────────────────────┤  ├──────────────────────────────┤   │
+│               │  ① Trích xuất nhanh       │  │  Thử tối đa 3 dạng địa chỉ:  │   │
+│               │    SĐT · Tên · Địa chỉ     │  │    1. Địa chỉ đã chuẩn hóa   │   │
+│               │            │               │  │    2. Địa chỉ gốc tin nhắn   │   │
+│               │            ▼               │  │    3. Đường + Tỉnh rút gọn   │   │
+│               │  ② AI  gpt-4o-mini ───────┼─▶│                              │   │
+│               │    Phân tích ngữ nghĩa     │  │  Xác thực đúng tỉnh/thành    │   │
+│               │            │               │  │  tránh tọa độ sai vị trí     │   │
+│               │            ▼               │  └──────────────┬───────────────┘   │
+│               │  ③ Chuẩn hóa địa giới     │                 ▼                   │
+│               │    Tên cũ → Tên mới 2025   │           lat / lng                 │
+│               └────────────────────────────┘                                     │
+└──────────────────────────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
 ## 3. Luồng Xử Lý Một Request
 
-```mermaid
-flowchart TD
-    IN([POST /parse-text]) --> L1{len > 5000?}
-    L1 -->|yes| E400[400 input_too_long]
-    L1 -->|no| L2{Semaphore\nmax 20}
-    L2 -->|timeout| E429[429 Server busy]
-    L2 -->|ok| PRE["compact_text()\nextract_phone() → mask_phone()\nextract_rule_hints() · extract_rule_note()"]
-    PRE --> LLM["LLMClient.extract_order()\ngpt-4o-mini structured output"]
-    LLM -->|CircuitBreakerOpen| E503[503 LLM unavailable]
-    LLM --> MERGE["Merge: regex_phone > LLM phone\nrule_name / rule_note fallback"]
-    MERGE --> NORM["AddressNormalizer.normalize()\nfuzzy match → ward/province mới"]
-    NORM --> L3{address\nfound?}
-    L3 -->|null| E422A[422 address_not_found]
-    L3 -->|ok| GEO["GoongClient.geocode()\nfallback chain × 3"]
-    GEO -->|all failed| E422B[422 geocode_failed]
-    GEO -->|ok| R200["200 OK\nrecipient_name · phone · note\naddress_new · address_info · lat · lng"]
-
-    style E400 fill:#f66,color:#fff
-    style E429 fill:#f66,color:#fff
-    style E503 fill:#f66,color:#fff
-    style E422A fill:#f96,color:#fff
-    style E422B fill:#f96,color:#fff
-    style R200 fill:#6c6,color:#fff
+```
+  ┌──────────────────────────────────────────────────┐
+  │         NHẬN TIN NHẮN  —  POST /parse-text       │
+  └────────────────────────┬─────────────────────────┘
+                           │
+                           ▼
+             ┌─────────────────────────┐  Có   ┌─────────────────────────────────┐
+             │   Tin nhắn quá dài?     │──────▶│  400  Tin nhắn vượt 5.000 ký tự │
+             │   (giới hạn 5.000 ký tự)│       └─────────────────────────────────┘
+             └────────────┬────────────┘
+                          │ Không
+                          ▼
+             ┌─────────────────────────┐  Đầy  ┌─────────────────────────────────┐
+             │   Server đang bận       │──────▶│  429  Server đang bận           │
+             │   (tải đồng thời cao)   │       │       Vui lòng thử lại sau      │
+             └────────────┬────────────┘       └─────────────────────────────────┘
+                          │ Còn chỗ
+                          ▼
+             ┌─────────────────────────┐ Không ┌─────────────────────────────────┐
+             │   Có phải đơn hàng?     │──────▶│  Trả về rỗng                    │
+             │   (kiểm tra sơ bộ)      │       │  Không gọi AI — tiết kiệm chi phí│
+             └────────────┬────────────┘       └─────────────────────────────────┘
+                          │ Có
+                          ▼
+             ┌────────────────────────────────────────────┐
+             │  Tiền xử lý                                │
+             │  Chuẩn hóa văn bản · Tách số điện thoại    │
+             │  Trích xuất hint tên / địa chỉ / ghi chú   │
+             └────────────────────────┬───────────────────┘
+                                      │
+                                      ▼
+             ┌────────────────────────────────────────────┐  Lỗi / ┌──────────────────────────┐
+             │  AI  gpt-4o-mini                           │ quá tải│  503  Dịch vụ AI tạm thời│
+             │  Phân tích tên · ghi chú · địa chỉ         │───────▶│       không khả dụng     │
+             └────────────────────────┬───────────────────┘        └──────────────────────────┘
+                                      │
+                                      ▼
+             ┌────────────────────────────────────────────┐
+             │  Ghép & hoàn thiện kết quả                 │
+             │  SĐT từ regex · Tên · Ghi chú giao hàng    │
+             └────────────────────────┬───────────────────┘
+                                      │
+                                      ▼
+             ┌────────────────────────────────────────────┐
+             │  Chuẩn hóa địa giới                        │
+             │  Map tỉnh / phường cũ  →  tên mới 2025     │
+             └────────────────────────┬───────────────────┘
+                                      │
+                                      ▼
+             ┌─────────────────────────┐ Không ┌─────────────────────────────────┐
+             │   Địa chỉ hợp lệ?       │──────▶│  422  Không tìm được địa chỉ    │
+             └────────────┬────────────┘       └─────────────────────────────────┘
+                          │ Có
+                          ▼
+             ┌────────────────────────────────────────────┐  Thất  ┌──────────────────────────┐
+             │  Geocoding  Goong.io                       │  bại  │  422  Không lấy được      │
+             │  Thử tối đa 3 lần với 3 dạng địa chỉ       │───────▶│       tọa độ             │
+             └────────────────────────┬───────────────────┘        └──────────────────────────┘
+                                      │ Thành công
+                                      ▼
+             ┌──────────────────────────────────────────────────────────────────┐
+             │   200  THÀNH CÔNG                                                │
+             │   Tên người nhận  ·  Số điện thoại  ·  Ghi chú giao hàng         │
+             │   Địa chỉ mới (đã chuẩn hóa)  ·  Tọa độ  lat / lng               │
+             └──────────────────────────────────────────────────────────────────┘
 ```
 
 ---
@@ -99,21 +137,60 @@ flowchart TD
 
 Nếu chỉ dùng LLM, hệ thống gặp 3 vấn đề: latency cao, model tự bịa field thiếu, và các trường cấu trúc cố định (số điện thoại) không cần AI. Vì vậy hệ thống dùng pipeline lai 4 lớp:
 
-```mermaid
-flowchart LR
-    R1["Rule-based\ntrước"] --> LLM["gpt-4o-mini\nOpenAI API"]
-    LLM --> R2["Rule-based\nsau"]
-    R2 --> DB["Mapping DB\nđịa giới 2025"]
-    DB --> GEO["Goong.io\nGeocoding"]
-    GEO --> JSON["JSON chuẩn\n+ tọa độ"]
+```
+                  ┌──────────────────────┐
+                  │    Tin nhắn thô      │
+                  │ Facebook · Zalo      │
+                  │ TikTok · Livestream  │
+                  └──────────┬───────────┘
+                             │
+                             ▼
+  ┌──────────────────────────────────────────────────────┐
+  │  LỚP 1 — XỬ LÝ NHANH (rule-based)                    │
+  │  • Tách số điện thoại bằng regex (không cần AI)      │
+  │  • Chuẩn hóa khoảng trắng, ký tự đặc biệt            │
+  │  • Phát hiện từ khóa đơn hàng                        │
+  │  • Reject input rõ ràng không phải đơn hàng          │
+  └──────────────────────────┬───────────────────────────┘
+                             │
+                             ▼
+  ┌──────────────────────────────────────────────────────┐
+  │  LỚP 2 — AI  gpt-4o-mini                             │
+  │  • Hiểu ngữ nghĩa tự nhiên, viết tắt, sai chính tả   │
+  │  • Trích xuất tên người nhận                         │
+  │  • Trích xuất ghi chú giao hàng                      │
+  │  • Phân tách địa chỉ thành các thành phần            │
+  │  • Phân biệt courier với người nhận                  │
+  └──────────────────────────┬───────────────────────────┘
+                             │
+                             ▼
+  ┌──────────────────────────────────────────────────────┐
+  │  LỚP 3 — HẬU XỬ LÝ (rule-based)                      │
+  │  • Sửa lỗi phân tách số nhà / tên đường              │
+  │  • Bổ sung thông tin còn thiếu từ bước trích xuất    │
+  └──────────────────────────┬───────────────────────────┘
+                             │
+                             ▼
+  ┌──────────────────────────────────────────────────────┐
+  │  LỚP 4 — CHUẨN HÓA ĐỊA GIỚI + GEOCODING              │
+  │  • DB 63 tỉnh · hơn 10.000 xã/phường                 │
+  │  • Map địa chỉ cũ → tên hành chính mới 2025          │
+  │  • Lấy tọa độ lat/lng từ Goong.io                    │
+  └──────────────────────────┬───────────────────────────┘
+                             │
+                             ▼
+                  ┌──────────────────────┐
+                  │   JSON chuẩn         │
+                  │   + lat / lng        │
+                  └──────────────────────┘
 ```
 
 | Lớp | Vai trò |
 |---|---|
-| Rule-based trước | Phone regex, compact text, hint tên/địa chỉ/note, reject input không hợp lệ |
+| Xử lý nhanh | Phone regex, compact text, hint tên/địa chỉ/note, reject input không hợp lệ |
 | gpt-4o-mini | Hiểu ngữ nghĩa linh hoạt: tên khách, note, phân tách địa chỉ, nhận diện courier vs người nhận |
-| Rule-based sau | Sửa lỗi tách số nhà/đường, merge fallback rule → LLM |
-| Mapping DB + Geocoding | Chuẩn hóa tỉnh/phường sau sáp nhập, thêm tọa độ lat/lng |
+| Hậu xử lý | Sửa lỗi tách số nhà/đường, merge fallback rule → LLM |
+| Chuẩn hóa + Geocoding | Chuẩn hóa tỉnh/phường sau sáp nhập, thêm tọa độ lat/lng |
 
 ---
 
@@ -125,134 +202,172 @@ Hệ thống gọi OpenAI API với `response_format=LLMOrderStrict` (Pydantic s
 - 9 luật bắt buộc [R1–R9] bao gồm không bịa dữ liệu, mask phone, nhận diện người nhận, phân tách địa chỉ 2 cấp mới / 3 cấp cũ
 - 4 few-shot examples: đơn đơn giản, 2 người, "[Tên] ơi" pattern, đổi địa chỉ
 
-**Schema LLM output** (`LLMAddressInfoStrict`):
+**Schema phân tách địa chỉ**:
 
 ```
-address_info: {
-  address_number  ← số nhà / POI / thôn-xóm-ấp
-  street          ← đường/ngõ/hẻm
-  neighborhood    ← xã/phường cũ (chỉ khi địa chỉ 3 cấp cũ)
-  municipality    ← xã/phường mới HOẶC quận/huyện cũ
-  sub_region      ← tỉnh/thành phố
-  country         ← "VNM"
-}
+Địa chỉ đầu vào
+  │
+  ├── address_number  →  Số nhà / Tên tòa nhà / POI / thôn-xóm-ấp
+  ├── street          →  Tên đường / ngõ / hẻm
+  ├── neighborhood    →  Xã/phường cũ (chỉ khi địa chỉ 3 cấp hành chính cũ)
+  ├── municipality    →  Xã/phường mới  HOẶC  quận/huyện cũ
+  ├── sub_region      →  Tỉnh/thành phố
+  └── country         →  "VNM"
 ```
 
 **Lưu ý quan trọng về thôn/xóm/ấp**: Đây là đơn vị dưới xã, không phải cấp hành chính. LLM đưa vào `address_number`, code `_to_internal()` cũng xử lý trường hợp LLM nhầm đặt vào `neighborhood`.
 
 ---
 
-## 6. Reliability — Circuit Breaker & Retry
+## 6. Độ Tin Cậy — Circuit Breaker & Retry
 
-```mermaid
-classDiagram
-    class BaseHttpClient {
-        MAX_RETRIES = 2
-        BASE_RETRY_DELAY = 1.0s
-        CIRCUIT_FAILURE_THRESHOLD = 5
-        CIRCUIT_RECOVERY_TIMEOUT = 30s
-        _protected_call(factory)
-        _retry(factory)
-    }
-    class LLMClient {
-        _RETRYABLE: RateLimitError · TimeoutError · ConnectionError · InternalServerError
-        extract_order(text)
-    }
-    class GoongClient {
-        _RETRYABLE: TimeoutException · ConnectError · RemoteProtocolError
-        geocode(address)
-    }
-    BaseHttpClient <|-- LLMClient
-    BaseHttpClient <|-- GoongClient
+Mọi lời gọi ra bên ngoài (OpenAI, Goong.io) đều đi qua lớp bảo vệ tự động:
+
+```
+  ┌──────────────────────────────────────────────────────────────────┐
+  │                  CƠ CHẾ BẢO VỆ — CIRCUIT BREAKER                 │
+  ├──────────────────────────────────────────────────────────────────┤
+  │                                                                  │
+  │   ┌────────────────┐   5 lỗi liên tiếp   ┌────────────────────┐  │
+  │   │                │────────────────────▶│                    │  │
+  │   │  ĐÓNG          │                     │  MỞ                │  │
+  │   │  Hoạt động     │◀────────────────────│  Chặn 30 giây      │  │
+  │   │  bình thường   │  Thử lại thành công │  Từ chối ngay 503  │  │
+  │   └────────┬───────┘                     └────────┬───────────┘  │
+  │            │                                      │ Sau 30 giây  │
+  │            │                                      ▼              │
+  │            │                             ┌────────────────────┐  │
+  │            └────────────────────────────▶│  NỬA MỞ            │  │
+  │                   Xác nhận phục hồi      │  Gửi 1 request     │  │
+  │                                          │  thăm dò           │  │
+  │                                          └────────────────────┘  │
+  └──────────────────────────────────────────────────────────────────┘
+
+  Mỗi request đều được bảo vệ bởi cơ chế retry tự động:
+  ┌─────────────────────────────────────────────────────────────────┐
+  │  Lần 1 ──▶ Lỗi ──▶ Chờ ~1s ──▶ Lần 2 ──▶ Lỗi ──▶ Chờ ~2s        │
+  │  ──▶ Lần 3 ──▶ Lỗi ──▶ Tăng bộ đếm lỗi Circuit Breaker          │
+  └─────────────────────────────────────────────────────────────────┘
 ```
 
-- **Retry**: tối đa 3 lần (1 + 2 retry), exponential backoff + jitter
-- **Circuit Breaker**: 5 lỗi liên tiếp → OPEN 30s → HALF_OPEN → probe → CLOSED
-- **Semaphore**: max 20 concurrent LLM call, queue timeout 30s → HTTP 429
+- **Retry**: tối đa 3 lần (1 + 2 retry), thời gian chờ tăng dần có random jitter
+- **Circuit Breaker**: 5 lỗi liên tiếp → chặn 30s → thăm dò → phục hồi
+- **Semaphore**: tối đa 20 request AI song song, quá thì xếp hàng chờ, timeout → HTTP 429
 
 ---
 
 ## 7. Chuẩn Hóa Địa Giới Sau Sáp Nhập 2025
 
-Sáp nhập hành chính 2025 làm nhiều tỉnh, huyện, xã phường đổi tên hoặc gộp vào đơn vị mới. Hệ thống dùng `vietnam_administrative.json` (~2.7 MB) với `merged_from[]` để map địa chỉ cũ → mới.
+Sáp nhập hành chính 2025 làm nhiều tỉnh, huyện, xã phường đổi tên hoặc gộp vào đơn vị mới. Hệ thống dùng cơ sở dữ liệu địa giới tự crawl từ các trang web chính thống với ánh xạ địa chỉ cũ → mới.
 
-```mermaid
-flowchart TD
-    A[Địa chỉ từ LLM] --> B[normalize_key: bỏ dấu + prefix]
-    B --> C[Match tỉnh/thành trước]
-    C --> D[Match huyện/quận cũ nếu có]
-    D --> E[Match xã/phường trong tỉnh đó]
-    E --> F[Combined fuzzy score\nprovince×0.42 + district×0.28 + ward×0.30]
-    F --> G{score ≥ 84\nvà không ambiguous?}
-    G -->|Có| H[Trả tỉnh/phường mới\nis_normalized=True]
-    G -->|Không| I[Giữ raw từ LLM\nis_normalized=False]
+```
+  ┌─────────────────────────────────────────────────────────────────┐
+  │  Địa chỉ từ đơn hàng                                            │
+  │  VD: "xã An Thái, huyện Quỳnh Phụ, tỉnh Thái Bình"              │
+  └─────────────────────────────┬───────────────────────────────────┘
+                                │
+                                ▼
+  ┌─────────────────────────────────────────────────────────────────┐
+  │  Bước 1 — Chuẩn hóa key tìm kiếm                                │
+  │  Bỏ dấu · Bỏ từ hành chính (tỉnh, huyện, xã...)                 │
+  │  Để so sánh chính xác hơn, không phân biệt cách viết            │
+  └─────────────────────────────┬───────────────────────────────────┘
+                                │
+                                ▼
+  ┌─────────────────────────────────────────────────────────────────┐
+  │  Bước 2 — Khớp Tỉnh/Thành phố trước                             │
+  │  Thu hẹp không gian tìm kiếm xuống 1 tỉnh                       │
+  └─────────────────────────────┬───────────────────────────────────┘
+                                │
+                                ▼
+  ┌─────────────────────────────────────────────────────────────────┐
+  │  Bước 3 — Khớp Huyện/Quận cũ (nếu có)                           │
+  │  Phân biệt xã cùng tên ở các huyện/tỉnh khác nhau               │
+  └─────────────────────────────┬───────────────────────────────────┘
+                                │
+                                ▼
+  ┌─────────────────────────────────────────────────────────────────┐
+  │  Bước 4 — Khớp Xã/Phường trong phạm vi tỉnh đã xác định         │
+  └─────────────────────────────┬───────────────────────────────────┘
+                                │
+                                ▼
+  ┌─────────────────────────────────────────────────────────────────┐
+  │  Tính điểm tổng hợp                                             │
+  │  Tỉnh × 42%  +  Huyện × 28%  +  Xã/Phường × 30%                 │
+  └─────────────────────────────┬───────────────────────────────────┘
+                                │
+                    ┌───────────┴──────────────┐
+               Điểm ≥ 84                   Điểm thấp /
+               không trùng lặp             không đủ tin cậy
+                    │                          │
+                    ▼                          ▼
+  ┌──────────────────────────┐  ┌──────────────────────────────────┐
+  │  Trả tên MỚI (2025)      │  │  Giữ nguyên địa chỉ gốc          │
+  │  Xã A Sào,  Hưng Yên     │  │  Không tự đoán để tránh sai      │
+  └──────────────────────────┘  └──────────────────────────────────┘
 ```
 
 **Lý do ưu tiên tỉnh → huyện → xã**: Nhiều xã/phường cũ trùng tên giữa các tỉnh/huyện. Match từ tỉnh trước thu hẹp không gian tìm kiếm, huyện cũ là hint phân biệt xã cùng tên.
 
-Ví dụ: `xã An Thái, huyện Quỳnh Phụ, tỉnh Thái Bình` → `Xã A Sào, Tỉnh Hưng Yên`
+Ví dụ: `xã An Thái, huyện Quỳnh Phụ, tỉnh Thái Bình` → `Xã A Sào, Hưng Yên`
 
 ---
 
 ## 8. Geocoding — Goong.io
 
-Sau khi chuẩn hóa địa chỉ, hệ thống gọi Goong.io để lấy tọa độ lat/lng.
+Sau khi chuẩn hóa địa chỉ, hệ thống gọi Goong.io để lấy tọa độ lat/lng. Có cơ chế thử 3 lần với 3 dạng địa chỉ khác nhau để tăng tỷ lệ thành công.
 
-```mermaid
-flowchart TD
-    S([Bắt đầu]) --> C1["① address_new\nnormalized admin"]
-    C1 --> G1{Goong\nkết quả?}
-    G1 -->|Không / centroid| C2
-    G1 -->|Có| P1{province\nkhớp?}
-    P1 -->|Không| C2
-    P1 -->|Có| OK
+```
+  ┌─────────────────────────────────────────────────────────────────┐
+  │  GEOCODING — THỬ TUẦN TỰ ĐẾN KHI CÓ KẾT QUẢ HỢP LỆ              │
+  └─────────────────────────────────────────────────────────────────┘
 
-    C2["② address_raw\nnguyên văn LLM"]
-    C2 --> G2{Goong\nkết quả?}
-    G2 -->|Không| C3
-    G2 -->|Có| P2{province\nkhớp?}
-    P2 -->|Không| C3
-    P2 -->|Có| OK
-
-    C3["③ street + province_short\nbỏ municipality"]
-    C3 --> G3{Goong\nkết quả?}
-    G3 -->|Không| FAIL
-    G3 -->|Có| P3{province\nkhớp?}
-    P3 -->|Không| FAIL
-    P3 -->|Có| OK
-
-    OK(["✓ lat, lng"])
-    FAIL(["✗ 422 geocode_failed"])
-    style OK fill:#6c6,color:#fff
-    style FAIL fill:#f66,color:#fff
+  ┌─────────────────────────────────────────────────────────────────┐
+  │  Lần thử  ①  Địa chỉ đã chuẩn hóa theo tên mới 2025            │
+  │  VD: "Quán giằng, Xã A Sào, Hưng Yên"                           │
+  └──────────────────────────────┬──────────────────────────────────┘
+                                 │
+              ┌──────────────────┴──────────────────┐
+         Tìm được &                            Không tìm được /
+         đúng tỉnh                             sai tỉnh / centroid
+              │                                      │
+              ▼                                      ▼
+    Trả lat / lng  ✓            ┌─────────────────────────────────────┐
+                                │  Lần thử  ②  Địa chỉ gốc từ tin nhắn│
+                                │  VD: "xã an thái, huyện quỳnh phụ,  │
+                                │       tỉnh thái bình"               │
+                                └──────────────────┬──────────────────┘
+                                                   │
+                                ┌──────────────────┴─────────────────┐
+                           Tìm được &                           Không tìm được /
+                           đúng tỉnh                            sai tỉnh
+                                │                                     │
+                                ▼                                     ▼
+                      Trả lat / lng  ✓       ┌───────────────────────────────────┐
+                                             │  Lần thử  ③  Rút gọn tối đa      │
+                                             │  Chỉ: Số nhà + Đường + Tỉnh       │
+                                             │  (bỏ phường/quận — tránh lỗi      │
+                                             │   tên hành chính cũ/mới)          │
+                                             └──────────────────┬────────────────┘
+                                                                │
+                                             ┌──────────────────┴─────────────────┐
+                                        Tìm được &                           Không tìm được /
+                                        đúng tỉnh                            sai tỉnh
+                                             │                                     │
+                                             ▼                                     ▼
+                                   Trả lat / lng  ✓             422 — Không lấy được tọa độ
 ```
 
-**Province validation**: Goong trả tên tỉnh theo hệ cũ → map sang hệ mới qua AdminDB → so sánh với `sub_region` đã normalize. Reject nếu không khớp.
-
-**`short_province()`**: Trước khi build `address_new` và `address_info.sub_region`, hàm này strip prefix hành chính ("Thủ đô", "Thành phố", "Tỉnh") khỏi tên tỉnh. Ví dụ: `"Thủ đô Hà Nội"` → `"Hà Nội"`. Nếu không strip, Goong nhận "Thủ đô Hà Nội" và trả kết quả sai địa điểm.
+**Xác thực tỉnh/thành**: Goong trả tên tỉnh theo hệ cũ → map sang hệ mới qua DB địa giới → so sánh với tỉnh/thành đã xác định. Reject nếu không khớp để tránh trả tọa độ sai tỉnh.
 
 ---
 
-## 9. OCR Ảnh Chụp Màn Hình
-
-Hệ thống dùng EasyOCR như thư viện Python chạy in-process (không cần service riêng), hỗ trợ tiếng Việt + tiếng Anh. Output OCR được đưa thẳng vào pipeline `/parse-text` hiện có.
-
-```mermaid
-flowchart LR
-    IMG[Ảnh chụp màn hình] --> OCR[EasyOCR\nvi + en]
-    OCR --> TXT[Text OCR]
-    TXT --> PIPE[Parse-text pipeline]
-    PIPE --> JSON[JSON đơn hàng]
-```
-
----
-
-## 10. Guardrails
+## 9. Guardrails
 
 | Tình huống | Xử lý |
 |---|---|
 | Input > 5000 ký tự | HTTP 400 `input_too_long` |
-| Input không phải đơn hàng | LLM trả tất cả `null` theo R2 |
+| Input không phải đơn hàng | trả tất cả `null` trước khi gọi LLM |
 | Thiếu thông tin | Giữ `null`, không tự bịa (R1) |
 | Phone | Regex xử lý 100%, không qua LLM |
 | Địa chỉ không resolve được | HTTP 422 `geocode_failed` |
@@ -261,7 +376,7 @@ flowchart LR
 Ví dụ input không hợp lệ:
 
 ```text
-hãy viết thơ về mùa xuân
+hãy giải bài toán này cho tôi
 ```
 
 Output:
@@ -287,7 +402,7 @@ Output:
 
 ---
 
-## 11. Benchmark
+## 10. Benchmark
 
 Dataset: 300 mẫu, chạy song song concurrency=1 và concurrency=10.
 
@@ -311,7 +426,7 @@ Dataset: 300 mẫu, chạy song song concurrency=1 và concurrency=10.
 | Mean | 2.34s | **2.23s** |
 | P50 | 2.38s | **2.04s** |
 | P95 | 2.95s | **2.78s** |
-| Max | 3.39s | 33.2s* |
+| Max | 3.39s | 4.27s |
 
 \* Max của gpt-4o-mini là outlier do retry khi OpenAI throttle.
 
@@ -324,55 +439,42 @@ Dataset: 300 mẫu, chạy song song concurrency=1 và concurrency=10.
 
 ---
 
-## 12. Chi Phí Vận Hành
+## 11. Chi Phí Vận Hành
 
-Chi phí ước tính trên GCP asia-southeast1, mỗi request ~400 input + 100 output tokens:
+Chi phí ước tính trên GCP asia-southeast1. Mỗi request gpt-4o-mini tiêu thụ ~1500 input tokens (system prompt ~1200 + user message ~300) + ~100 output tokens:
 
-| Traffic | API cost/tháng | Chi phí server | Tổng/tháng |
+| Scenario | Chi phí/request |
+|---|---:|
+| Không cache (cold start) | ~$0.000285 |
+| Có prompt cache | ~$0.000195 |
+| **Trung bình thực tế** | **~$0.00025** |
+
+_System prompt ~1200 tokens là static → OpenAI tự cache, giảm ~30% chi phí input._
+
+### Chi phí theo traffic (server e2-small cố định $36/tháng)
+
+| Traffic | API cost/tháng | Server | Tổng/tháng |
 |---|---:|---:|---:|
-| 1,000 req/ngày | $3.6 | $36 (e2-small) | **~$40** |
-| 10,000 req/ngày | $36 | $36 | **~$72** |
-| 35,000 req/ngày | $126 | $36 | **~$162** |
+| 1,000 req/ngày | $7.5 | $36 | **~$44** |
+| 5,000 req/ngày | $37.5 | $36 | **~$74** |
+| 10,000 req/ngày | $75 | $36 | **~$111** |
+| 35,000 req/ngày | $263 | $36 | **~$299** |
 
-Điểm hòa vốn so với T4 On-demand ($300/tháng): **~35,000 req/ngày**. Dưới ngưỡng này, OpenAI API rẻ hơn self-host và không cần quản lý GPU/vLLM.
+### Điểm hòa vốn so với self-host T4
 
----
+| So sánh | Breakeven |
+|---|---|
+| T4 Spot ($115/tháng) | **~10,000 req/ngày** |
+| T4 On-demand ($300/tháng) | **~35,000 req/ngày** |
 
-## 13. Edge Cases Địa Chỉ Đã Xử Lý
-
-### Thôn/xóm/ấp — đơn vị dưới xã
-
-Input: `"Quán giằng, thôn Hạ, xã A Sào, Hưng Yên"`
-
-LLM đôi khi đặt "thôn Hạ" vào `neighborhood` và "xã A Sào" vào `municipality`. Hàm `_to_internal()` kiểm tra `_HAMLET_PREFIX_RE` — nếu `neighborhood` bắt đầu bằng thôn/xóm/ấp thì đây không phải cấp hành chính xã/phường, lấy `municipality` làm ward thực sự.
-
-```
-neighborhood="thôn Hạ", municipality="xã A Sào"
-→ ward="xã A Sào", district_hint=None  ✓
-```
-
-### "Công xã Paris" — tên đường, không phải tên xã
-
-Input: `"Bưu điện trung tâm Sài Gòn, Công xã Paris, Q1, HCM"`
-
-`WARD_RE` trong `rule_extractor.py` match `"xã Paris"` bên trong cụm "Công **xã** Paris". Hai bug liên tiếp:
-
-1. `re.sub` alternation có `x\.?` trước `xã` → chỉ remove "x", để lại "ã Paris" → trả về `"Xã ã Paris"` (garbled). Fix: đặt `xã` trước `x\.?`.
-2. Rule hint `ward="Xã Paris"` ghi đè LLM vì `address.ward=None`. Fix: merge guard trong `_merge_address_hints` kiểm tra nếu core name của ward hint ("paris") xuất hiện trong `address.street` hoặc `address.house_number` → skip merge.
-
-Kết quả đúng: `municipality="Quận 1"`.
-
-### "Thủ đô Hà Nội" — prefix gây Goong fail
-
-`AddressNormalizer` trả tên chuẩn "Thủ đô Hà Nội" (tên chính thức sau sáp nhập). Khi đưa vào `address_new`, Goong nhận "Thủ đô Hà Nội" và trả kết quả sai. Fix: `short_province()` strip prefix trước khi build `address_new` và `address_info.sub_region` → `"Hà Nội"`.
+Dưới ngưỡng breakeven: OpenAI API rẻ hơn và không cần quản lý GPU/vLLM. Trên ngưỡng: chuyển self-host T4 Spot để tiết kiệm.
 
 ---
 
-## 14. Hướng Phát Triển
+## 12. Hướng Phát Triển
 
 - Cải thiện `name` accuracy: thêm few-shot examples cho các pattern danh xưng phức tạp.
 - Thêm confidence score rõ ràng cho từng field để frontend highlight field không chắc.
 - Tách benchmark theo nhóm case: viết tắt, địa chỉ cũ, địa chỉ mới, thiếu field, đổi địa chỉ.
 - Cache kết quả theo hash input để giảm latency cho tin nhắn lặp lại.
 - Khi traffic vượt ~35,000 req/ngày: chuyển sang self-host T4 Spot + Qwen2.5-3B fine-tuned.
-- Đánh giá OCR bằng CER/WER trên ảnh chụp màn hình thực tế.
