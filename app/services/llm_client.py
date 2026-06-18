@@ -44,6 +44,7 @@ SYSTEM_PROMPT = """Bạn là engine trích xuất thông tin đơn giao hàng Vi
   - Địa chỉ 2 cấp mới (sau sáp nhập 2025): neighborhood = null, municipality = xã/phường/thị trấn mới, sub_region = tỉnh/thành phố mới.
   - Địa chỉ 3 cấp cũ: neighborhood = xã/phường cũ, municipality = quận/huyện/thị xã/TP cấp huyện cũ, sub_region = tỉnh/thành cũ.
   - Nếu input chỉ có tỉnh/thành phố (không có phường/quận): municipality = null, sub_region = tên tỉnh/thành. VD: "45 Lê Lợi, Hà Nội" → municipality=null, sub_region="Hà Nội".
+  - thôn/xóm/ấp là đơn vị dưới xã, KHÔNG phải cấp hành chính xã/phường → đưa vào address_number cùng POI, không đặt vào neighborhood/municipality. VD: "Quán giằng, thôn Hạ, xã A Sào, Hưng Yên" → address_number="Quán giằng, thôn Hạ", neighborhood=null, municipality="xã A Sào", sub_region="Hưng Yên".
   - street: đường/ngõ/ngách/hẻm/khu phố/KĐT/chung cư là landmark đường đi.
   - address_number: số nhà/căn hộ/tòa nhà/POI chính.
   - Không tự suy diễn tỉnh/thành chỉ từ quận/huyện trừ khi input nói rõ.
@@ -159,13 +160,27 @@ class LLMClient(BaseHttpClient):
         r"^\s*(quận|huyện|thị\s+xã|q\.)\s*",
         re.IGNORECASE,
     )
+    # thôn/xóm/ấp là đơn vị dưới xã — không phải cấp hành chính phường/xã
+    _HAMLET_PREFIX_RE = re.compile(
+        r"^\s*(thôn|xóm|ấp|khu phố|khu|khối)\s*",
+        re.IGNORECASE,
+    )
 
     def _to_internal(self, data: LLMOrderStrict) -> ExtractedOrder:
         info = data.address_info
         neighborhood = info.neighborhood
         municipality = info.municipality
 
-        if neighborhood:
+        if neighborhood and self._HAMLET_PREFIX_RE.match(neighborhood):
+            # LLM nhầm thôn/xóm/ấp vào neighborhood — đây không phải cấp xã/phường
+            # municipality thực sự là xã/phường, hoặc quận/huyện cần giữ làm district_hint
+            if municipality and self._DISTRICT_PREFIX_RE.match(municipality):
+                ward = None
+                district_hint = municipality
+            else:
+                ward = municipality
+                district_hint = None
+        elif neighborhood:
             ward = neighborhood
             district_hint = municipality
         elif municipality and self._DISTRICT_PREFIX_RE.match(municipality):
