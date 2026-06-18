@@ -19,7 +19,7 @@ from app.schemas.order import (
     ParseRequest,
     ParseResponse,
 )
-from app.pipeline.text_utils import short_province, strip_accents
+from app.pipeline.text_utils import canonical_province, strip_accents
 from app.schemas.order import ExtractedAddress as _ExtractedAddress
 from app.services.base_client import CircuitBreakerOpenError
 from app.services.goong_client import GeocodeResult, GoongClient, GoongGeocodeFailed
@@ -105,7 +105,7 @@ async def _parse_with_llm(text: str) -> ParseResponse:
     return result
 
 
-_goong_province = short_province
+_goong_province = canonical_province
 
 
 async def _geocode_with_fallback(result: ParseResponse) -> tuple[float, float]:

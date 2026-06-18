@@ -56,6 +56,18 @@ _PROVINCE_ADMIN_PREFIX_RE = re.compile(
     re.IGNORECASE,
 )
 
+# Informal / abbreviated province names → canonical new-2025 name
+_PROVINCE_ALIAS: dict[str, str] = {
+    "sai gon": "Hồ Chí Minh",
+    "saigon": "Hồ Chí Minh",
+    "tphcm": "Hồ Chí Minh",
+    "tp hcm": "Hồ Chí Minh",
+    "hcm": "Hồ Chí Minh",
+    "hn": "Hà Nội",
+    "da nang": "Đà Nẵng",
+    "can tho": "Cần Thơ",
+}
+
 
 def short_province(name: str | None) -> str | None:
     """Strip admin-level prefix from province name for display and geocoding.
@@ -65,6 +77,18 @@ def short_province(name: str | None) -> str | None:
     if not name:
         return name
     return _PROVINCE_ADMIN_PREFIX_RE.sub("", name).strip() or name
+
+
+def canonical_province(name: str | None) -> str | None:
+    """Normalize province: strip admin prefix then resolve common aliases.
+
+    'Thành phố Hồ Chí Minh' → 'Hồ Chí Minh', 'Sài Gòn' → 'Hồ Chí Minh'
+    """
+    name = short_province(name)
+    if not name:
+        return name
+    key = strip_accents(name).lower().strip()
+    return _PROVINCE_ALIAS.get(key, name)
 
 
 def normalize_text_key(text: str, remove_admin_prefix: bool = True) -> str:

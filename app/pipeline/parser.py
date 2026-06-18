@@ -4,7 +4,7 @@ from app.core_config import Settings
 from app.pipeline.address_normalizer import AddressNormalizer
 from app.pipeline.phone_extractor import extract_phone, mask_phone, normalize_phone
 from app.pipeline.rule_extractor import extract_rule_hints, extract_rule_note
-from app.pipeline.text_utils import compact_text, short_province
+from app.pipeline.text_utils import canonical_province, compact_text
 from app.schemas.order import (
     ExtractedAddress,
     ExtractedOrder,
@@ -93,7 +93,7 @@ class OrderParser:
                 sub_region = inferred
         if not sub_region and municipality:
             sub_region = self.address_normalizer.infer_province_from_municipality(municipality)
-        sub_region = short_province(sub_region)
+        sub_region = canonical_province(sub_region)
         address_new = self._format_address(
             address_number,
             street,
