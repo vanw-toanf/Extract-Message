@@ -64,6 +64,17 @@ class OrderParser:
             extracted.address.district_hint,
             extracted.address.province,
         )
+        # Guard: LLM sometimes puts a district name in the province field (e.g. "Gia Lâm"
+        # instead of "Hà Nội"). Detect this before normalization so the province filter
+        # doesn't exclude the correct province's records from candidate scoring.
+        if not extracted.address.district_hint and extracted.address.province:
+            inferred_prov = self.address_normalizer.infer_province_from_municipality(
+                extracted.address.province
+            )
+            if inferred_prov and inferred_prov.lower() != extracted.address.province.lower():
+                extracted.address.district_hint = extracted.address.province
+                extracted.address.province = inferred_prov
+
         normalized_address = self.address_normalizer.normalize(extracted.address)
 
         address_number = (
