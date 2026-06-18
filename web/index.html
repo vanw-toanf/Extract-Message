@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Order Extractor Demo</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="container">
+
+    <header>
+      <div class="logo">⚡</div>
+      <div>
+        <h1>Order Extractor</h1>
+        <p class="subtitle">Trích xuất thông tin đơn hàng tự động</p>
+      </div>
+      <span class="badge">GPT-4o mini</span>
+      <a href="dashboard.html" class="dashboard-link">📊 Dashboard</a>
+    </header>
+
+    <!-- Input -->
+    <section class="card">
+      <label class="section-label">Nhập nội dung đơn hàng</label>
+      <textarea
+        id="input-text"
+        rows="5"
+        placeholder="Dán tin nhắn, ghi chú đơn hàng vào đây...&#10;&#10;Ví dụ: giao cho chị A, 09xxxxxxxx, 88 Nguyễn Du, Hoàn Kiếm, Hà Nội, gọi trước 30p"
+      ></textarea>
+      <div class="input-footer">
+        <span class="hint">Ctrl + Enter để phân tích</span>
+        <div class="actions">
+          <button id="clear-btn" class="btn-ghost-sm">Xóa</button>
+          <button id="parse-btn" class="btn-primary">
+            <svg id="btn-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+            </svg>
+            <span id="btn-label">Phân tích đơn</span>
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Error -->
+    <div id="error-banner" class="error-banner hidden">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+      </svg>
+      <span id="error-text"></span>
+    </div>
+
+    <!-- Results -->
+    <section id="results-section" class="card">
+      <div class="results-header">
+        <span class="section-label">Kết quả trích xuất</span>
+        <span id="result-tag" class="result-tag hidden">✓ Đã xử lý</span>
+      </div>
+
+      <!-- Name + Phone -->
+      <div class="field-grid two-col">
+        <div class="field-group">
+          <label>Tên người nhận <span class="req">*</span></label>
+          <input type="text" id="f-name" spellcheck="false" placeholder="—" />
+        </div>
+        <div class="field-group">
+          <label>Số điện thoại <span class="req">*</span></label>
+          <input type="text" id="f-phone" spellcheck="false" placeholder="—" />
+        </div>
+      </div>
+
+      <!-- Note -->
+      <div class="field-group">
+        <label>Ghi chú</label>
+        <input type="text" id="f-note" spellcheck="false" placeholder="—" />
+      </div>
+
+      <!-- Address -->
+      <div class="address-block">
+        <div class="address-title">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>
+          </svg>
+          Địa chỉ
+        </div>
+
+        <div class="field-group">
+          <label>Số nhà + Đường <span class="req">*</span></label>
+          <input type="text" id="f-street" spellcheck="false" placeholder="—" />
+        </div>
+
+        <div class="field-grid two-col">
+          <div class="field-group">
+            <label>Xã / Phường</label>
+            <input type="text" id="f-ward" spellcheck="false" placeholder="—" />
+          </div>
+          <div class="field-group">
+            <label>Tỉnh / Thành phố <span class="req">*</span></label>
+            <input type="text" id="f-province" spellcheck="false" placeholder="—" />
+          </div>
+        </div>
+
+        <!-- Raw address toggle -->
+        <button id="toggle-raw" class="btn-raw-toggle">
+          <span id="toggle-arrow">▼</span>
+          <span id="toggle-label">Xem địa chỉ gốc (chưa chuẩn hóa)</span>
+        </button>
+        <div id="raw-address-box" class="raw-address-box hidden">
+          <span class="raw-label">address_raw</span>
+          <span id="raw-address-text"></span>
+        </div>
+      </div>
+
+      <!-- Map -->
+      <div class="map-block">
+        <div class="address-title">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"/>
+            <line x1="9" y1="3" x2="9" y2="18"/><line x1="15" y1="6" x2="15" y2="21"/>
+          </svg>
+          Vị trí trên bản đồ
+        </div>
+
+        <div id="map-wrap">
+          <div id="map"></div>
+          <div id="no-map" class="no-map hidden">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/>
+            </svg>
+            <span>Không xác định được tọa độ địa chỉ</span>
+          </div>
+        </div>
+        <div id="coords-bar" class="coords-bar">
+          <span id="coords-text" class="coords-empty">Chưa có tọa độ</span>
+          <a id="maps-link" href="#" target="_blank" class="maps-link hidden">Mở Google Maps ↗</a>
+        </div>
+      </div>
+
+      <div id="feedback-saved" class="feedback-saved hidden">✓ Feedback đã ghi nhận</div>
+
+    </section>
+  </div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dashboard — Order Extractor</title>
+  <style>
+    :root {
+      --primary:  #2563eb;
+      --bg:       #f1f5f9;
+      --card:     #ffffff;
+      --border:   #e2e8f0;
+      --text:     #0f172a;
+      --muted:    #64748b;
+      --light:    #94a3b8;
+      --r:        10px;
+      --r-sm:     7px;
+      --shadow:   0 1px 3px rgba(0,0,0,.08), 0 1px 2px rgba(0,0,0,.04);
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      padding: 28px 16px 48px;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .container { max-width: 960px; margin: 0 auto; }
+
+    /* Header */
+    header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 22px;
+    }
+    header h1 { font-size: 1.25rem; font-weight: 700; }
+    .subtitle  { font-size: 0.8rem; color: var(--muted); margin-top: 1px; }
+    .back-link {
+      margin-left: auto;
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: var(--muted);
+      text-decoration: none;
+      padding: 5px 10px;
+      border: 1.5px solid var(--border);
+      border-radius: var(--r-sm);
+      white-space: nowrap;
+      transition: color .15s, border-color .15s;
+    }
+    .back-link:hover { color: var(--primary); border-color: var(--primary); }
+
+    /* Stats */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin-bottom: 18px;
+    }
+    .stat-card {
+      background: var(--card);
+      border-radius: var(--r);
+      box-shadow: var(--shadow);
+      padding: 18px 20px;
+    }
+    .stat-label {
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .06em;
+      color: var(--muted);
+      margin-bottom: 6px;
+    }
+    .stat-value {
+      font-size: 2rem;
+      font-weight: 800;
+      color: var(--text);
+      line-height: 1;
+    }
+    .stat-sub {
+      font-size: 0.78rem;
+      color: var(--light);
+      margin-top: 4px;
+    }
+
+    /* Table card */
+    .card {
+      background: var(--card);
+      border-radius: var(--r);
+      box-shadow: var(--shadow);
+      padding: 0;
+      overflow: hidden;
+      margin-bottom: 14px;
+    }
+
+    .card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 20px;
+      border-bottom: 1.5px solid var(--border);
+    }
+    .section-label {
+      font-size: 0.78rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .06em;
+      color: var(--muted);
+    }
+
+    #refresh-btn {
+      background: none;
+      border: 1.5px solid var(--border);
+      border-radius: var(--r-sm);
+      padding: 5px 12px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--muted);
+      cursor: pointer;
+      font-family: inherit;
+      transition: color .15s, border-color .15s;
+    }
+    #refresh-btn:hover { color: var(--primary); border-color: var(--primary); }
+
+    /* Table */
+    table { width: 100%; border-collapse: collapse; }
+    thead th {
+      font-size: 0.7rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .06em;
+      color: var(--light);
+      padding: 10px 16px;
+      text-align: left;
+      border-bottom: 1.5px solid var(--border);
+      background: #fafafa;
+    }
+    tbody tr {
+      border-bottom: 1px solid var(--border);
+      cursor: pointer;
+      transition: background .1s;
+    }
+    tbody tr:last-child { border-bottom: none; }
+    tbody tr:hover { background: #f8fafc; }
+    td {
+      padding: 11px 16px;
+      font-size: 0.88rem;
+      vertical-align: middle;
+    }
+    td.ts    { color: var(--muted); font-size: 0.8rem; white-space: nowrap; }
+    td.input { color: var(--text); }
+    td.changes { text-align: center; }
+    td.fields  { color: var(--muted); font-size: 0.82rem; }
+
+    .badge-count {
+      display: inline-block;
+      background: #fef3c7;
+      color: #92400e;
+      border: 1px solid #fde68a;
+      border-radius: 99px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      padding: 2px 8px;
+    }
+
+    /* Empty state */
+    .empty-state {
+      text-align: center;
+      padding: 48px 20px;
+      color: var(--light);
+      font-size: 0.9rem;
+    }
+
+    /* Modal */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(15,23,42,.45);
+      z-index: 100;
+      align-items: flex-start;
+      justify-content: center;
+      padding: 40px 16px;
+      overflow-y: auto;
+    }
+    .modal-overlay.open { display: flex; }
+
+    .modal {
+      background: var(--card);
+      border-radius: var(--r);
+      box-shadow: 0 8px 32px rgba(0,0,0,.2);
+      width: 100%;
+      max-width: 640px;
+      overflow: hidden;
+    }
+
+    .modal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 20px;
+      border-bottom: 1.5px solid var(--border);
+    }
+    .modal-header h2 { font-size: 1rem; font-weight: 700; }
+    #modal-close {
+      background: none;
+      border: none;
+      font-size: 1.2rem;
+      color: var(--muted);
+      cursor: pointer;
+      padding: 2px 6px;
+      border-radius: 4px;
+      transition: color .1s;
+    }
+    #modal-close:hover { color: var(--text); }
+
+    .modal-body { padding: 20px; }
+
+    .detail-section { margin-bottom: 18px; }
+    .detail-title {
+      font-size: 0.7rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .06em;
+      color: var(--light);
+      margin-bottom: 8px;
+    }
+
+    .input-box {
+      background: #f8fafc;
+      border: 1.5px solid var(--border);
+      border-radius: var(--r-sm);
+      padding: 10px 13px;
+      font-size: 0.9rem;
+      color: var(--text);
+      line-height: 1.5;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    .diff-table { width: 100%; border-collapse: collapse; }
+    .diff-table th {
+      font-size: 0.7rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .05em;
+      color: var(--light);
+      padding: 6px 10px;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+    }
+    .diff-table td {
+      padding: 8px 10px;
+      font-size: 0.87rem;
+      border-bottom: 1px solid #f1f5f9;
+      vertical-align: top;
+    }
+    .diff-table tr:last-child td { border-bottom: none; }
+    .field-name {
+      font-weight: 700;
+      color: var(--muted);
+      white-space: nowrap;
+      font-size: 0.78rem;
+    }
+    .val-orig { color: var(--muted); }
+    .val-corr { color: #16a34a; font-weight: 600; }
+    .arrow    { color: var(--light); padding: 0 4px; }
+
+    /* Timestamp */
+    .modal-ts {
+      font-size: 0.78rem;
+      color: var(--light);
+    }
+
+    .hidden { display: none !important; }
+
+    @media (max-width: 600px) {
+      .stats-grid { grid-template-columns: 1fr 1fr; }
+      .stats-grid .stat-card:last-child { grid-column: span 2; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+
+    <header>
+      <div style="font-size:1.6rem;line-height:1">📊</div>
+      <div>
+        <h1>Dashboard</h1>
+        <p class="subtitle">Feedback log &amp; thống kê request</p>
+      </div>
+      <a href="index.html" class="back-link">← Demo</a>
+    </header>
+
+    <!-- Stats -->
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-label">Tổng request</div>
+        <div class="stat-value" id="stat-requests">—</div>
+        <div class="stat-sub">lần gọi /parse-text</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Feedback nhận được</div>
+        <div class="stat-value" id="stat-feedback">—</div>
+        <div class="stat-sub">bản ghi từ người dùng</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Tỉ lệ feedback</div>
+        <div class="stat-value" id="stat-rate">—</div>
+        <div class="stat-sub">% request có sửa</div>
+      </div>
+    </div>
+
+    <!-- Table -->
+    <div class="card">
+      <div class="card-header">
+        <span class="section-label">Feedback log</span>
+        <button id="refresh-btn">↻ Làm mới</button>
+      </div>
+
+      <div id="empty-state" class="empty-state hidden">
+        Chưa có feedback nào. Thử phân tích một đơn hàng và sửa một trường kết quả.
+      </div>
+
+      <table id="log-table">
+        <thead>
+          <tr>
+            <th>Thời gian</th>
+            <th>Nội dung nhập</th>
+            <th style="text-align:center">Số trường sửa</th>
+            <th>Trường đã sửa</th>
+          </tr>
+        </thead>
+        <tbody id="log-body"></tbody>
+      </table>
+    </div>
+
+  </div>
+
+  <!-- Modal -->
+  <div id="modal-overlay" class="modal-overlay">
+    <div class="modal">
+      <div class="modal-header">
+        <h2>Chi tiết feedback</h2>
+        <button id="modal-close">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="detail-section">
+          <div class="detail-title">Thời gian</div>
+          <div class="modal-ts" id="modal-ts"></div>
+        </div>
+        <div class="detail-section">
+          <div class="detail-title">Nội dung đơn hàng gốc</div>
+          <div class="input-box" id="modal-input"></div>
+        </div>
+        <div class="detail-section">
+          <div class="detail-title">Các trường đã sửa</div>
+          <table class="diff-table">
+            <thead>
+              <tr>
+                <th>Trường</th>
+                <th>Giá trị gốc (API)</th>
+                <th></th>
+                <th>Giá trị sửa (người dùng)</th>
+              </tr>
+            </thead>
+            <tbody id="modal-diff"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const API_URL = 'https://api-extract.vanwtoanf.io.vn';
+
+    const FIELD_LABELS = {
+      'f-name':     'Tên người nhận',
+      'f-phone':    'Số điện thoại',
+      'f-note':     'Ghi chú',
+      'f-street':   'Số nhà + Đường',
+      'f-ward':     'Xã / Phường',
+      'f-province': 'Tỉnh / Thành phố',
+    };
+
+    let records = [];
+
+    async function loadData() {
+      try {
+        const res  = await fetch(`${API_URL}/feedback`);
+        const data = await res.json();
+        records = (data.records ?? []).slice().reverse(); // newest first
+        renderStats(data.total_requests ?? 0, records.length);
+        renderTable(records);
+      } catch {
+        document.getElementById('empty-state').textContent = 'Không thể kết nối đến server.';
+        document.getElementById('empty-state').classList.remove('hidden');
+        document.getElementById('log-table').classList.add('hidden');
+      }
+    }
+
+    function renderStats(totalReq, totalFb) {
+      document.getElementById('stat-requests').textContent = totalReq.toLocaleString('vi-VN');
+      document.getElementById('stat-feedback').textContent = totalFb.toLocaleString('vi-VN');
+      const rate = totalReq > 0 ? ((totalFb / totalReq) * 100).toFixed(1) : '0.0';
+      document.getElementById('stat-rate').textContent = `${rate}%`;
+    }
+
+    function renderTable(rows) {
+      const tbody = document.getElementById('log-body');
+      tbody.innerHTML = '';
+
+      if (rows.length === 0) {
+        document.getElementById('empty-state').classList.remove('hidden');
+        document.getElementById('log-table').classList.add('hidden');
+        return;
+      }
+      document.getElementById('empty-state').classList.add('hidden');
+      document.getElementById('log-table').classList.remove('hidden');
+
+      rows.forEach((r, idx) => {
+        const corrections = r.corrections ?? {};
+        const fieldKeys   = Object.keys(corrections);
+        const fieldNames  = fieldKeys.map(k => FIELD_LABELS[k] ?? k).join(', ');
+        const inputSnip   = (r.input_text ?? '').substring(0, 70);
+        const inputText   = inputSnip.length < (r.input_text ?? '').length
+          ? inputSnip + '…' : inputSnip;
+
+        const ts = r.ts ? formatTs(r.ts) : '—';
+
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td class="ts">${ts}</td>
+          <td class="input">${esc(inputText)}</td>
+          <td class="changes"><span class="badge-count">${fieldKeys.length}</span></td>
+          <td class="fields">${esc(fieldNames)}</td>
+        `;
+        tr.addEventListener('click', () => openModal(r));
+        tbody.appendChild(tr);
+      });
+    }
+
+    function openModal(r) {
+      document.getElementById('modal-ts').textContent = r.ts ? formatTsFull(r.ts) : '—';
+      document.getElementById('modal-input').textContent = r.input_text ?? '';
+
+      const diffTbody = document.getElementById('modal-diff');
+      diffTbody.innerHTML = '';
+
+      const corrections = r.corrections ?? {};
+      Object.entries(corrections).forEach(([key, val]) => {
+        const label    = FIELD_LABELS[key] ?? key;
+        const original = val.original ?? '';
+        const corrected = val.corrected ?? '';
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td class="field-name">${esc(label)}</td>
+          <td class="val-orig">${esc(original) || '<em style="color:#cbd5e1">trống</em>'}</td>
+          <td class="arrow">→</td>
+          <td class="val-corr">${esc(corrected) || '<em style="color:#cbd5e1">trống</em>'}</td>
+        `;
+        diffTbody.appendChild(tr);
+      });
+
+      document.getElementById('modal-overlay').classList.add('open');
+    }
+
+    function formatTs(iso) {
+      try {
+        const d = new Date(iso);
+        return d.toLocaleString('vi-VN', { dateStyle: 'short', timeStyle: 'short' });
+      } catch { return iso; }
+    }
+
+    function formatTsFull(iso) {
+      try {
+        const d = new Date(iso);
+        return d.toLocaleString('vi-VN', { dateStyle: 'full', timeStyle: 'medium' });
+      } catch { return iso; }
+    }
+
+    function esc(str) {
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    }
+
+    document.getElementById('refresh-btn').addEventListener('click', loadData);
+    document.getElementById('modal-close').addEventListener('click', () => {
+      document.getElementById('modal-overlay').classList.remove('open');
+    });
+    document.getElementById('modal-overlay').addEventListener('click', (e) => {
+      if (e.target === document.getElementById('modal-overlay')) {
+        document.getElementById('modal-overlay').classList.remove('open');
+      }
+    });
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') document.getElementById('modal-overlay').classList.remove('open');
+    });
+
+    loadData();
+  </script>
+</body>
+</html>
